@@ -48,7 +48,6 @@ function renderSlots() {
       <p class="slot-meta"><span>Собрано</span><strong>${rub(slot.funded)} · ${progress}%</strong></p>
       <p class="slot-meta"><span>Осталось</span><strong>${rub(remainder)}</strong></p>
       <div class="slot-progress"><div class="slot-progress-fill" style="width: ${progress}%"></div></div>
-      <p class="slot-participant">${slot.participant ? `Участник: ${slot.participant}` : ""}</p>
     `;
     slotsGrid.appendChild(card);
 
@@ -165,14 +164,8 @@ supportForm.addEventListener("submit", async (event) => {
       throw new Error(data.error || "Не удалось отправить заявку. Попробуйте ещё раз.");
     }
 
-    // Visual feedback — local view of the slot (real source of truth is Telegram for now)
-    slot.funded += paymentAmount;
-    slot.participant = participantName;
-    renderSlots();
-
-    const freqLabel = frequency === "monthly" ? "ежемесячное" : "разовое";
     setFormSuccess(
-      `Принято ${freqLabel} пожертвование на ${rub(paymentAmount)}. Заявка отправлена координатору фонда — на ${email} в течение дня придут сертификат и фотоотчёт.`
+      `Заявка отправлена координатору фонда. Вам будет выслан счёт на оплату на email ${email}. По мере реализации слота будет сделан фотоотчёт и предоставлен отчёт о реализации.`
     );
 
     supportForm.reset();
