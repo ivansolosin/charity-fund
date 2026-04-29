@@ -28,8 +28,11 @@ yarn-error.log*
 .env.local
 .env.*.local
 
-# Build output (на будущее, если появится сборка)
+# Node
+node_modules/
+npm-debug.log*
+
+# Build output
 dist/
 build/
 .cache/
-node_modules/

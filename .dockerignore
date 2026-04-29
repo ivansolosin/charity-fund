@@ -3,7 +3,7 @@
 .gitattributes
 .github
 
-# Docs (keep them out of the image — image is ~6 MB without)
+# Docs
 README.md
 LICENSE
 
@@ -21,15 +21,12 @@ Icon
 *.swp
 *.swo
 
-# Logs / env
+# Logs / env / secrets
 *.log
 .env*
 
-# Build artifacts
+# Build artifacts (regenerated inside container)
 node_modules
-dist
-build
-.cache
 
 # Self
 Dockerfile

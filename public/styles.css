@@ -982,6 +982,36 @@ input::placeholder {
   font-weight: 500;
   color: var(--success);
   min-height: 1.35em;
+  line-height: 1.5;
+}
+
+.form-message.is-error {
+  color: #b54848;
+}
+
+.btn-primary.is-loading {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.btn-primary.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  animation: btn-shimmer 1.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes btn-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* =============================================================

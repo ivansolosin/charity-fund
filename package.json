@@ -1,0 +1,19 @@
+{
+  "name": "charity-fund",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Charity fund landing with Telegram-backed application intake",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "license": "MIT"
+}

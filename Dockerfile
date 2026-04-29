@@ -1,24 +1,33 @@
 # =============================================================
-# nginx-based static site for Railway / Docker
-# - listens on $PORT (Railway sets it dynamically)
-# - serves index.html, styles.css, script.js
-# - sane cache headers, gzip, basic security headers
+# charity-fund — Node 20 / Express server
+# - serves /public statics
+# - exposes POST /api/apply (forwards to Telegram)
+# - listens on $PORT (Railway injects it)
 # =============================================================
 
-FROM nginx:1.27-alpine
+FROM node:20-alpine
 
 LABEL org.opencontainers.image.title="charity-fund"
-LABEL org.opencontainers.image.description="Charity fund landing — slot-based transparent support"
+LABEL org.opencontainers.image.description="Charity fund landing — slot-based transparent support, Telegram-backed intake"
 LABEL org.opencontainers.image.source="https://github.com/ivansolosin/charity-fund"
 
-# Static assets
-COPY index.html styles.css script.js /usr/share/nginx/html/
+WORKDIR /app
 
-# nginx template (envsubst processes ${PORT} at container start)
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Railway injects $PORT; default to 80 for plain `docker run`
-ENV PORT=80
-EXPOSE 80
+# Install dependencies first for better layer caching
+COPY package.json ./
+RUN npm install --omit=dev --no-audit --no-fund \
+    && npm cache clean --force
 
-# nginx:alpine entrypoint already handles template rendering + nginx -g
+# Copy source
+COPY server.js ./
+COPY public ./public
+
+# Run as non-root for safety
+USER node
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

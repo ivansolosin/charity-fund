@@ -85,13 +85,23 @@ amountPresetInputs.forEach((input) => {
   input.addEventListener("change", syncCustomAmountVisibility);
 });
 
-supportForm.addEventListener("submit", (event) => {
+function setFormError(text) {
+  formMessage.textContent = text;
+  formMessage.classList.add("is-error");
+}
+
+function setFormSuccess(text) {
+  formMessage.textContent = text;
+  formMessage.classList.remove("is-error");
+}
+
+supportForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  formMessage.textContent = "";
+  setFormSuccess("");
 
   const slot = slots.find((item) => item.id === slotSelect.value);
   if (!slot) {
-    formMessage.textContent = "Выберите доступный слот.";
+    setFormError("Выберите доступный слот.");
     return;
   }
 
@@ -102,12 +112,12 @@ supportForm.addEventListener("submit", (event) => {
   const remainder = Math.max(slot.total - slot.funded, 0);
 
   if (!participantName || !email) {
-    formMessage.textContent = "Заполните ФИО/организацию и email.";
+    setFormError("Заполните ФИО/организацию и email.");
     return;
   }
 
   if (remainder === 0) {
-    formMessage.textContent = "Этот слот уже полностью закрыт. Выберите другой.";
+    setFormError("Этот слот уже полностью закрыт. Выберите другой.");
     return;
   }
 
@@ -115,7 +125,7 @@ supportForm.addEventListener("submit", (event) => {
   if (preset === "custom") {
     paymentAmount = Number(customAmountInput.value);
     if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
-      formMessage.textContent = "Введите корректную сумму пожертвования.";
+      setFormError("Введите корректную сумму пожертвования.");
       return;
     }
   } else {
@@ -123,21 +133,59 @@ supportForm.addEventListener("submit", (event) => {
   }
 
   if (paymentAmount > remainder) {
-    formMessage.textContent = `Максимальная сумма для этого слота: ${rub(remainder)}.`;
+    setFormError(`Максимальная сумма для этого слота: ${rub(remainder)}.`);
     return;
   }
 
-  slot.funded += paymentAmount;
-  slot.participant = participantName;
-  renderSlots();
+  // ---- Submit to backend ----
+  const submitBtn = supportForm.querySelector('button[type="submit"]');
+  const originalHTML = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.classList.add("is-loading");
+  submitBtn.innerHTML = '<span>Отправляем…</span>';
 
-  const freqLabel = frequency === "monthly" ? "ежемесячное" : "разовое";
-  formMessage.textContent = `Принято ${freqLabel} пожертвование на ${rub(paymentAmount)}. На ${email} отправлены сертификат участника и фотоотчёт о помощи.`;
+  try {
+    const response = await fetch("/api/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        slot: slot.id,
+        slotTitle: slot.title,
+        participantName,
+        email,
+        amount: paymentAmount,
+        frequency,
+      }),
+    });
 
-  supportForm.reset();
-  document.querySelector('input[name="amountPreset"][value="500"]').checked = true;
-  document.getElementById("freqMonthly").checked = true;
-  syncCustomAmountVisibility();
+    let data = {};
+    try { data = await response.json(); } catch { /* non-JSON body */ }
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || "Не удалось отправить заявку. Попробуйте ещё раз.");
+    }
+
+    // Visual feedback — local view of the slot (real source of truth is Telegram for now)
+    slot.funded += paymentAmount;
+    slot.participant = participantName;
+    renderSlots();
+
+    const freqLabel = frequency === "monthly" ? "ежемесячное" : "разовое";
+    setFormSuccess(
+      `Принято ${freqLabel} пожертвование на ${rub(paymentAmount)}. Заявка отправлена координатору фонда — на ${email} в течение дня придут сертификат и фотоотчёт.`
+    );
+
+    supportForm.reset();
+    document.querySelector('input[name="amountPreset"][value="500"]').checked = true;
+    document.getElementById("freqMonthly").checked = true;
+    syncCustomAmountVisibility();
+  } catch (err) {
+    setFormError(err.message || "Что-то пошло не так. Попробуйте ещё раз.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove("is-loading");
+    submitBtn.innerHTML = originalHTML;
+  }
 });
 
 /* =============================================================
