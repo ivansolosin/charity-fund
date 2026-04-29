@@ -35,31 +35,21 @@ const PORT = Number(process.env.PORT) || 3000;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// ----------------------------------------------------------------------------
-//  Admin credentials.
-//  Defaults are intentionally weak so the admin "just works" out of the box.
-//  CHANGE BEFORE EXPOSING TO REAL USERS — set ADMIN_PASSWORD on Railway.
-// ----------------------------------------------------------------------------
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "123456";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const SESSION_SECRET =
   process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 const COOKIE_NAME = "cf_sess";
 
-const usingDefaultPassword = !process.env.ADMIN_PASSWORD;
-if (usingDefaultPassword) {
-  console.warn("");
-  console.warn("==============================================================");
-  console.warn("  ⚠  WARNING: using DEFAULT admin credentials (admin / 123456)");
-  console.warn("     Source code is public on GitHub — anyone can read this.");
-  console.warn("     Set ADMIN_PASSWORD env var on Railway as soon as possible.");
-  console.warn("==============================================================");
-  console.warn("");
+if (!ADMIN_PASSWORD) {
+  console.warn(
+    "[auth] ADMIN_PASSWORD is not set — admin endpoints will return 503 until configured."
+  );
 }
 if (!process.env.SESSION_SECRET) {
   console.warn(
-    "[auth] SESSION_SECRET is not set — using ephemeral random secret. Sessions will reset on each redeploy."
+    "[auth] SESSION_SECRET is not set — using ephemeral random secret. Sessions will reset on restart."
   );
 }
 
