@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f1219" />
+    <meta name="description" content="Прозрачная фондовая помощь проектам — выбор слота, оплата полностью или частично, именной сертификат и фотоотчёт." />
+    <title>Фонд — Прозрачная помощь проектам</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero" data-spotlight>
+      <div class="hero-aurora" aria-hidden="true"></div>
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="container hero-inner">
+        <p class="badge" data-reveal>
+          <span class="badge-dot" aria-hidden="true"></span>
+          Прозрачная помощь
+        </p>
+        <h1 data-reveal data-reveal-delay="60">
+          Фондовая поддержка проектов <em>слотами</em>.
+        </h1>
+        <p class="lead" data-reveal data-reveal-delay="120">
+          Выберите слот, оплатите его полностью или частично — получите на почту именной сертификат участника и фотоотчёт о помощи.
+        </p>
+        <div class="hero-actions" data-reveal data-reveal-delay="180">
+          <a href="#slots" class="cta" data-magnetic>
+            <span>Выбрать слот</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+          <a href="#how" class="cta cta-secondary">Как это работает</a>
+        </div>
+        <dl class="hero-stats" data-reveal data-reveal-delay="240">
+          <div class="hero-stat">
+            <dt><span class="num tabular" data-counter="128">0</span></dt>
+            <dd>участников помощи</dd>
+          </div>
+          <div class="hero-stat">
+            <dt><span class="num tabular" data-counter="14">0</span></dt>
+            <dd>активных слотов</dd>
+          </div>
+          <div class="hero-stat">
+            <dt><span class="num tabular" data-counter="1860000" data-counter-suffix=" ₽">0 ₽</span></dt>
+            <dd>уже направлено в проекты</dd>
+          </div>
+        </dl>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="how" class="section">
+        <p class="eyebrow" data-reveal>Принцип</p>
+        <h2 data-reveal data-reveal-delay="60">Как это работает</h2>
+        <p class="section-text" data-reveal data-reveal-delay="120">
+          Три простых шага — от выбора слота до сертификата и фотоотчёта.
+        </p>
+        <div class="steps-grid" data-reveal-stagger>
+          <article class="step-card" data-reveal>
+            <span class="step-num">01</span>
+            <h3>Выбор слота</h3>
+            <p>Любой доступный слот поддержки проекта — на ваш выбор.</p>
+          </article>
+          <article class="step-card" data-reveal>
+            <span class="step-num">02</span>
+            <h3>Формат участия</h3>
+            <p>Оплачиваете слот целиком или любую удобную часть суммы.</p>
+          </article>
+          <article class="step-card" data-reveal>
+            <span class="step-num">03</span>
+            <h3>Подтверждение помощи</h3>
+            <p>Получаете на email сертификат участника и фотоотчёт о помощи.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="slots" class="section">
+        <p class="eyebrow" data-reveal>Слоты</p>
+        <h2 data-reveal data-reveal-delay="60">Доступные слоты поддержки</h2>
+        <p class="section-text" data-reveal data-reveal-delay="120">
+          Каждый слот можно закрыть целиком или внести любую часть суммы.
+        </p>
+        <div id="slotsGrid" class="slots-grid" data-reveal-stagger></div>
+      </section>
+
+      <section class="section form-section">
+        <p class="eyebrow" data-reveal>Поддержка</p>
+        <h2 data-reveal data-reveal-delay="60">Помочь фонду</h2>
+        <p class="section-text" data-reveal data-reveal-delay="120">
+          Выберите сумму и частоту пожертвования — это закроет часть выбранного слота.
+        </p>
+        <form id="supportForm" class="support-form" data-reveal data-reveal-delay="180">
+          <fieldset class="amount-chips" aria-label="Сумма пожертвования">
+            <legend class="visually-hidden">Сумма пожертвования</legend>
+            <label class="chip">
+              <input type="radio" name="amountPreset" value="300" />
+              <span>300 ₽</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="amountPreset" value="500" checked />
+              <span>500 ₽</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="amountPreset" value="1000" />
+              <span>1 000 ₽</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="amountPreset" value="3000" />
+              <span>3 000 ₽</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="amountPreset" value="5000" />
+              <span>5 000 ₽</span>
+            </label>
+            <label class="chip chip-custom">
+              <input type="radio" name="amountPreset" value="custom" />
+              <span>Другая сумма ₽</span>
+            </label>
+          </fieldset>
+
+          <label id="customAmountWrap" class="custom-amount hidden">
+            <span class="field-label">Своя сумма (₽)</span>
+            <input id="customAmount" type="number" min="100" step="100" placeholder="Например: 2 500" />
+          </label>
+
+          <div class="segmented" role="radiogroup" aria-label="Частота пожертвования">
+            <input type="radio" id="freqMonthly" name="frequency" value="monthly" checked />
+            <label for="freqMonthly">Ежемесячно</label>
+            <input type="radio" id="freqOnce" name="frequency" value="once" />
+            <label for="freqOnce">Разово</label>
+            <span class="segmented-thumb" aria-hidden="true"></span>
+          </div>
+
+          <p class="frequency-note">
+            Ежемесячная подписка даже на самую небольшую, но комфортную для вас сумму улучшает качество жизни наших подопечных.
+          </p>
+
+          <label>
+            <span class="field-label">Выберите слот</span>
+            <select id="slotSelect" required></select>
+          </label>
+          <label>
+            <span class="field-label">ФИО участника / Наименование организации</span>
+            <input id="participantName" type="text" placeholder="Например: Иван Петров или ООО Добро" required />
+          </label>
+          <label>
+            <span class="field-label">Email для сертификата и фотоотчёта</span>
+            <input id="email" type="email" placeholder="name@example.com" required />
+          </label>
+
+          <button type="submit" class="btn-primary" data-magnetic>
+            <span>Продолжить</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <p id="formMessage" class="form-message" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <p>Спасибо за участие в помощи и развитие благотворительных инициатив.</p>
+      </div>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>
