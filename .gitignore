@@ -36,10 +36,3 @@ npm-debug.log*
 dist/
 build/
 .cache/
-
-# Local SQLite data
-data/
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
