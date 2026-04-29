@@ -1,0 +1,36 @@
+.git
+.gitignore
+.gitattributes
+.github
+
+# Docs (keep them out of the image — image is ~6 MB without)
+README.md
+LICENSE
+
+# OS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# IDE
+.vscode
+.idea
+.cursor
+*.swp
+*.swo
+
+# Logs / env
+*.log
+.env*
+
+# Build artifacts
+node_modules
+dist
+build
+.cache
+
+# Self
+Dockerfile
+.dockerignore

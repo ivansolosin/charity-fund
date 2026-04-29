@@ -59,9 +59,29 @@ php -S localhost:8000
 
 ## Деплой
 
-Прод-окружение: **Railway** → [charity.up.railway.app](https://charity.up.railway.app)
-
+Прод-окружение: **Railway** → [charity.up.railway.app](https://charity.up.railway.app).
 Каждый push в `main` автоматически пересобирается и публикуется.
+
+В корне лежит `Dockerfile` на базе `nginx:1.27-alpine`:
+
+- Слушает динамический `$PORT` от Railway (через nginx-шаблон + `envsubst`).
+- Гзип, агрессивный кеш статики (30d, `immutable`), короткий кеш HTML (5 минут — чтобы обновления раскатывались быстро).
+- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`.
+- SPA-fallback: любая 404 ведёт на `index.html`.
+
+### Запустить контейнер локально
+
+```bash
+docker build -t charity-fund .
+docker run --rm -p 8080:80 charity-fund
+# открыть http://localhost:8080
+```
+
+### С кастомным портом (как Railway)
+
+```bash
+docker run --rm -e PORT=3000 -p 3000:3000 charity-fund
+```
 
 ## Структура
 
