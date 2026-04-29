@@ -28,6 +28,9 @@ Icon
 # Build artifacts (regenerated inside container)
 node_modules
 
+# Local SQLite data (must not leak into image)
+data/
+
 # Self
 Dockerfile
 .dockerignore

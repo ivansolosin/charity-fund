@@ -1,8 +1,8 @@
 {
   "name": "charity-fund",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Charity fund landing with Telegram-backed application intake",
+  "description": "Charity fund landing — slot-based intake with Telegram + SQLite admin",
   "type": "module",
   "main": "server.js",
   "engines": {
@@ -13,6 +13,7 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "better-sqlite3": "^11.7.0",
     "express": "^4.21.2"
   },
   "license": "MIT"
