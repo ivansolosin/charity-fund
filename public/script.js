@@ -159,13 +159,32 @@ supportForm.addEventListener("submit", async (event) => {
   const frequency = getSelectedFrequency();
   const remainder = Math.max(slot.total - slot.funded, 0);
 
-  if (!participantName || !email) {
-    setFormError("Заполните ФИО/организацию и email.");
+  if (!participantName) {
+    setFormError("Укажите ФИО или наименование организации.");
+    document.getElementById("participantName").focus();
     return;
   }
 
+  if (!email) {
+    setFormError("Укажите email — на него придёт счёт и отчёт.");
+    document.getElementById("email").focus();
+    return;
+  }
+  if (!email.includes("@") || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setFormError("Email должен содержать знак @ — например, name@example.com.");
+    document.getElementById("email").focus();
+    return;
+  }
+
+  if (phoneDigits.length === 0) {
+    setFormError("Укажите телефон для связи.");
+    phoneInput.focus();
+    return;
+  }
   if (phoneDigits.length !== 10) {
-    setFormError("Введите телефон полностью: 10 цифр после +7.");
+    setFormError(
+      `В номере не хватает цифр: введено ${phoneDigits.length} из 10. Полный формат: +7 (999) 123-45-67.`
+    );
     phoneInput.focus();
     return;
   }

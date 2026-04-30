@@ -145,7 +145,10 @@
             <select id="slotSelect" required></select>
           </label>
           <label>
-            <span class="field-label">ФИО участника / Наименование организации</span>
+            <span class="field-label">
+              ФИО участника / Наименование организации
+              <span class="required-mark" aria-hidden="true">*</span>
+            </span>
             <input
               id="participantName"
               type="text"
@@ -156,7 +159,10 @@
             />
           </label>
           <label>
-            <span class="field-label">Email для счёта и отчёта о реализации</span>
+            <span class="field-label">
+              Email для счёта и отчёта о реализации
+              <span class="required-mark" aria-hidden="true">*</span>
+            </span>
             <input
               id="email"
               type="email"
@@ -171,7 +177,10 @@
           </label>
 
           <label>
-            <span class="field-label">Телефон для связи</span>
+            <span class="field-label">
+              Телефон для связи
+              <span class="required-mark" aria-hidden="true">*</span>
+            </span>
             <div class="phone-field">
               <span class="phone-prefix" aria-hidden="true">+7</span>
               <input
@@ -185,6 +194,8 @@
               />
             </div>
           </label>
+
+          <p class="form-required-note">* — поля, обязательные к заполнению.</p>
 
           <label class="consent">
             <input id="consent" type="checkbox" required />

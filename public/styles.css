@@ -760,6 +760,25 @@ legend {
   color: var(--ink-3);
 }
 
+/* Маленькая золотая звёздочка у меток обязательных полей */
+.required-mark {
+  display: inline-block;
+  margin-left: 0.25rem;
+  color: var(--accent-rich);
+  font-weight: 700;
+  font-size: 0.85em;
+  line-height: 1;
+  vertical-align: 1px;
+}
+
+.form-required-note {
+  margin: -0.25rem 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ink-muted);
+  letter-spacing: 0;
+}
+
 .support-form > label {
   display: block;
 }

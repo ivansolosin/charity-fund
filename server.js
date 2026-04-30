@@ -95,15 +95,28 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       });
     }
     if (typeof participantName !== "string" || participantName.trim().length < 2 || participantName.length > 200) {
-      return res.status(400).json({ ok: false, error: "Имя должно быть от 2 до 200 символов." });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Укажите ФИО или наименование организации." });
     }
-    if (typeof email !== "string" || !isEmail(email) || email.length > 200) {
-      return res.status(400).json({ ok: false, error: "Невалидный email." });
+    if (typeof email !== "string" || email.length > 200) {
+      return res.status(400).json({ ok: false, error: "Укажите email." });
+    }
+    if (!email.includes("@")) {
+      return res
+        .status(400)
+        .json({ ok: false, error: "Email должен содержать знак @ — например, name@example.com." });
+    }
+    if (!isEmail(email)) {
+      return res.status(400).json({ ok: false, error: "Введите корректный email." });
     }
 
     // Phone: ожидаем +7XXXXXXXXXX (12 символов), но допускаем любую кириллицу/пробелы/скобки
     let phoneNormalized = "";
-    if (typeof phone === "string" && phone.trim()) {
+    if (typeof phone !== "string" || !phone.trim()) {
+      return res.status(400).json({ ok: false, error: "Укажите телефон для связи." });
+    }
+    {
       let digits = phone.replace(/\D/g, "");
       if (digits.startsWith("8") && digits.length === 11) digits = "7" + digits.slice(1);
       if (digits.startsWith("7") && digits.length === 11) {
@@ -111,10 +124,12 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       } else if (digits.length === 10) {
         phoneNormalized = "+7" + digits;
       } else {
-        return res.status(400).json({ ok: false, error: "Невалидный номер телефона." });
+        const after7 = digits.startsWith("7") || digits.startsWith("8") ? digits.slice(1) : digits;
+        return res.status(400).json({
+          ok: false,
+          error: `В номере не хватает цифр: получено ${after7.length} из 10. Полный формат: +7 (999) 123-45-67.`,
+        });
       }
-    } else {
-      return res.status(400).json({ ok: false, error: "Укажите телефон для связи." });
     }
 
     const amt = Number(amount);
