@@ -50,6 +50,12 @@
   --accent-soft: rgba(196, 169, 98, 0.16);
   --accent-glow: rgba(196, 169, 98, 0.45);
 
+  /* Клеверные зелёные — гуманная педагогика, акварель, живое */
+  --clover: #4a8a4a;
+  --clover-deep: #2f6b3a;
+  --clover-soft: #a9d2a3;
+  --clover-mist: rgba(74, 138, 74, 0.16);
+
   --hero-deep: #0c0e14;
   --hero-mid: #161b27;
   --hero-rim: rgba(232, 210, 150, 0.45);
@@ -73,6 +79,7 @@
   /* Type */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+  --font-script: "Caveat", "Cormorant Garamond", cursive;
 }
 
 /* =============================================================
@@ -88,8 +95,14 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  /* учитываем sticky-зоны для якорных ссылок (#how, #slots) */
-  scroll-padding-top: var(--space-5);
+  /* учитываем sticky-навигацию для якорных ссылок (#how, #slots, #support) */
+  scroll-padding-top: 88px;
+}
+
+@media (max-width: 720px) {
+  html {
+    scroll-padding-top: 72px;
+  }
 }
 
 body {
@@ -1261,6 +1274,236 @@ input::placeholder {
 }
 
 /* =============================================================
+   Site nav (top header with logo)
+   ============================================================= */
+
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(248, 246, 242, 0.78);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: 0.6rem 0;
+  min-height: 64px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-md);
+  padding: 0.25rem 0.35rem 0.25rem 0.25rem;
+  transition: transform var(--duration-2) var(--ease-out-cubic);
+}
+
+@media (hover: hover) {
+  .brand:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.brand-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  /* лёгкая зелёная подсветка вокруг акварельного логотипа */
+  filter: drop-shadow(0 2px 6px rgba(74, 138, 74, 0.18));
+  flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-name {
+  font-family: var(--font-script);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--clover-deep);
+}
+
+.brand-tag {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+.site-nav-links {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-5);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.site-nav-links a {
+  color: var(--ink-3);
+  text-decoration: none;
+  position: relative;
+  transition: color var(--duration-2) var(--ease-out-cubic);
+}
+
+@media (hover: hover) {
+  .site-nav-links a:hover {
+    color: var(--clover-deep);
+  }
+}
+
+.site-nav-cta {
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-pill);
+  background: var(--clover);
+  color: #fff !important;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 16px rgba(74, 138, 74, 0.28);
+  transition: transform var(--duration-2) var(--ease-out-cubic),
+    box-shadow var(--duration-2) var(--ease-out-cubic),
+    background var(--duration-2) var(--ease-out-cubic);
+}
+
+@media (hover: hover) {
+  .site-nav-cta:hover {
+    background: var(--clover-deep);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(74, 138, 74, 0.34);
+  }
+}
+
+.site-nav-cta:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 720px) {
+  .site-nav-inner {
+    gap: var(--space-3);
+  }
+  .brand-logo {
+    width: 44px;
+    height: 44px;
+  }
+  .brand-name {
+    font-size: 1.2rem;
+  }
+  .brand-tag {
+    display: none;
+  }
+  .site-nav-links a:not(.site-nav-cta) {
+    display: none;
+  }
+  .site-nav-cta {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* =============================================================
+   Hero — клеверные акценты
+   ============================================================= */
+
+/* Рукописная надпись над H1 в герое */
+.hero-script {
+  font-family: var(--font-script);
+  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+  font-weight: 600;
+  color: var(--clover-soft);
+  margin: 0 0 var(--space-3);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  /* лёгкое акварельное «свечение» */
+  text-shadow: 0 0 24px rgba(169, 210, 163, 0.35);
+}
+
+/* Декоративные «листочки» клевера в герое — SVG как маска */
+.hero-leaf {
+  position: absolute;
+  z-index: 0;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(74, 138, 74, 0.22), rgba(74, 138, 74, 0) 65%);
+  filter: blur(2px);
+  opacity: 0.85;
+}
+
+.hero-leaf::before {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  background: var(--clover-soft);
+  opacity: 0.18;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 8c-4 6-12 6-12 14 0 6 4 10 12 10s12-4 12-10c0-8-8-8-12-14zM12 30c-4 4-4 12 2 16 5 4 12 2 16-4 4-7 0-14-6-16-6-2-9-1-12 4zm40 0c4 4 4 12-2 16-5 4-12 2-16-4-4-7 0-14 6-16 6-2 9-1 12 4zM32 44c-4 6-2 14 4 18 6 4 14 0 14-8 0-8-10-12-18-10z' fill='black'/></svg>") center/contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 8c-4 6-12 6-12 14 0 6 4 10 12 10s12-4 12-10c0-8-8-8-12-14zM12 30c-4 4-4 12 2 16 5 4 12 2 16-4 4-7 0-14-6-16-6-2-9-1-12 4zm40 0c4 4 4 12-2 16-5 4-12 2-16-4-4-7 0-14 6-16 6-2 9-1 12 4zM32 44c-4 6-2 14 4 18 6 4 14 0 14-8 0-8-10-12-18-10z' fill='black'/></svg>") center/contain no-repeat;
+}
+
+.hero-leaf-1 {
+  top: 8%;
+  left: -5%;
+  transform: rotate(-15deg);
+}
+
+.hero-leaf-2 {
+  bottom: 12%;
+  right: -4%;
+  width: 280px;
+  height: 280px;
+  transform: rotate(20deg);
+}
+
+@media (max-width: 768px) {
+  .hero-leaf-1 {
+    width: 160px;
+    height: 160px;
+    top: 4%;
+    left: -10%;
+  }
+  .hero-leaf-2 {
+    width: 200px;
+    height: 200px;
+    bottom: 18%;
+    right: -10%;
+  }
+}
+
+/* Ссылка-якорь в форме «h1 em» уже акцент золотом — добавим лёгкий зелёный
+   подчерк под em для тёплой ноты */
+.hero h1 em {
+  position: relative;
+}
+
+.hero h1 em::after {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -0.05em;
+  height: 0.18em;
+  background: linear-gradient(90deg,
+    rgba(169, 210, 163, 0),
+    rgba(169, 210, 163, 0.55) 30%,
+    rgba(169, 210, 163, 0.55) 70%,
+    rgba(169, 210, 163, 0));
+  border-radius: 999px;
+  filter: blur(1px);
+}
+
+/* =============================================================
    Footer
    ============================================================= */
 
@@ -1271,12 +1514,48 @@ input::placeholder {
   color: var(--ink-muted);
   text-align: center;
   border-top: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 0%, rgba(74, 138, 74, 0.06), transparent 60%),
+    linear-gradient(180deg, transparent, rgba(169, 210, 163, 0.06));
 }
 
 .footer p {
   max-width: 36em;
   margin: 0 auto;
   line-height: 1.55;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  margin-bottom: var(--space-5);
+}
+
+.footer-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: var(--space-2);
+  filter: drop-shadow(0 4px 10px rgba(74, 138, 74, 0.18));
+}
+
+.footer-script {
+  font-family: var(--font-script);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--clover);
+  margin: 0;
+  line-height: 1;
+}
+
+.footer-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  margin: 0.2rem 0 0;
 }
 
 /* =============================================================
