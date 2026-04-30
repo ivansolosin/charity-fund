@@ -1296,52 +1296,34 @@ input::placeholder {
   min-height: 64px;
 }
 
+/* Логотип = типография бренда. Текст рядом не нужен (есть visually-hidden для SR). */
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
   text-decoration: none;
   color: inherit;
   border-radius: var(--radius-md);
-  padding: 0.25rem 0.35rem 0.25rem 0.25rem;
-  transition: transform var(--duration-2) var(--ease-out-cubic);
+  padding: 0.15rem 0.35rem;
+  transition: transform var(--duration-2) var(--ease-out-cubic),
+    filter var(--duration-2) var(--ease-out-cubic);
 }
 
 @media (hover: hover) {
   .brand:hover {
     transform: translateY(-1px);
   }
+  .brand:hover .brand-logo {
+    filter: drop-shadow(0 4px 12px rgba(47, 107, 58, 0.3));
+  }
 }
 
 .brand-logo {
-  width: 56px;
-  height: 56px;
+  height: 52px;
+  width: auto;
   object-fit: contain;
-  /* лёгкая зелёная подсветка вокруг акварельного логотипа */
-  filter: drop-shadow(0 2px 6px rgba(74, 138, 74, 0.18));
   flex-shrink: 0;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.brand-name {
-  font-family: var(--font-script);
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  color: var(--clover-deep);
-}
-
-.brand-tag {
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-  margin-top: 2px;
+  filter: drop-shadow(0 2px 6px rgba(47, 107, 58, 0.18));
+  transition: filter var(--duration-3) var(--ease-out-cubic);
 }
 
 .site-nav-links {
@@ -1395,14 +1377,7 @@ input::placeholder {
     gap: var(--space-3);
   }
   .brand-logo {
-    width: 44px;
     height: 44px;
-  }
-  .brand-name {
-    font-size: 1.2rem;
-  }
-  .brand-tag {
-    display: none;
   }
   .site-nav-links a:not(.site-nav-cta) {
     display: none;
@@ -1430,55 +1405,44 @@ input::placeholder {
   text-shadow: 0 0 24px rgba(169, 210, 163, 0.35);
 }
 
-/* Декоративные «листочки» клевера в герое — SVG как маска */
-.hero-leaf {
+/* Watermark-печать из самого логотипа — изящный акварельный знак справа сверху.
+   На тёмном hero blend-mode lighten + low opacity делает его «зелёной печатью»,
+   а не плоской картинкой. */
+.hero-watermark {
   position: absolute;
+  top: 50%;
+  right: -8%;
+  transform: translateY(-50%) rotate(-6deg);
+  width: clamp(360px, 44vw, 620px);
+  height: auto;
   z-index: 0;
-  width: 220px;
-  height: 220px;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 50%, rgba(74, 138, 74, 0.22), rgba(74, 138, 74, 0) 65%);
-  filter: blur(2px);
-  opacity: 0.85;
+  user-select: none;
+  opacity: 0.16;
+  mix-blend-mode: screen;
+  filter: blur(0.4px);
+  animation: watermark-breathe 14s ease-in-out infinite;
 }
 
-.hero-leaf::before {
-  content: "";
-  position: absolute;
-  inset: 22%;
-  background: var(--clover-soft);
-  opacity: 0.18;
-  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 8c-4 6-12 6-12 14 0 6 4 10 12 10s12-4 12-10c0-8-8-8-12-14zM12 30c-4 4-4 12 2 16 5 4 12 2 16-4 4-7 0-14-6-16-6-2-9-1-12 4zm40 0c4 4 4 12-2 16-5 4-12 2-16-4-4-7 0-14 6-16 6-2 9-1 12 4zM32 44c-4 6-2 14 4 18 6 4 14 0 14-8 0-8-10-12-18-10z' fill='black'/></svg>") center/contain no-repeat;
-          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 8c-4 6-12 6-12 14 0 6 4 10 12 10s12-4 12-10c0-8-8-8-12-14zM12 30c-4 4-4 12 2 16 5 4 12 2 16-4 4-7 0-14-6-16-6-2-9-1-12 4zm40 0c4 4 4 12-2 16-5 4-12 2-16-4-4-7 0-14 6-16 6-2 9-1 12 4zM32 44c-4 6-2 14 4 18 6 4 14 0 14-8 0-8-10-12-18-10z' fill='black'/></svg>") center/contain no-repeat;
+@keyframes watermark-breathe {
+  0%, 100% { transform: translateY(-50%) rotate(-6deg) scale(1); opacity: 0.16; }
+  50%      { transform: translateY(-52%) rotate(-5deg) scale(1.015); opacity: 0.20; }
 }
 
-.hero-leaf-1 {
-  top: 8%;
-  left: -5%;
-  transform: rotate(-15deg);
-}
-
-.hero-leaf-2 {
-  bottom: 12%;
-  right: -4%;
-  width: 280px;
-  height: 280px;
-  transform: rotate(20deg);
-}
-
-@media (max-width: 768px) {
-  .hero-leaf-1 {
-    width: 160px;
-    height: 160px;
-    top: 4%;
-    left: -10%;
+@media (max-width: 900px) {
+  .hero-watermark {
+    top: auto;
+    bottom: -10%;
+    right: -22%;
+    transform: rotate(-8deg);
+    width: 70vw;
+    opacity: 0.14;
+    animation: none;
   }
-  .hero-leaf-2 {
-    width: 200px;
-    height: 200px;
-    bottom: 18%;
-    right: -10%;
-  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-watermark { animation: none; }
 }
 
 /* Ссылка-якорь в форме «h1 em» уже акцент золотом — добавим лёгкий зелёный
@@ -1529,33 +1493,37 @@ input::placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
+  gap: var(--space-3);
   margin-bottom: var(--space-5);
 }
 
 .footer-logo {
-  width: 72px;
-  height: 72px;
+  height: 132px;
+  width: auto;
   object-fit: contain;
-  margin-bottom: var(--space-2);
-  filter: drop-shadow(0 4px 10px rgba(74, 138, 74, 0.18));
+  /* акварель «вписана» в бумагу, без рамок и теней — пусть дышит */
+  filter: drop-shadow(0 6px 18px rgba(47, 107, 58, 0.14));
+  transition: transform var(--duration-4) var(--ease-out-cubic);
+}
+
+@media (hover: hover) {
+  .footer-brand:hover .footer-logo {
+    transform: translateY(-2px) rotate(-1deg);
+  }
 }
 
 .footer-script {
   font-family: var(--font-script);
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--clover);
+  color: var(--clover-deep);
   margin: 0;
   line-height: 1;
+  letter-spacing: 0.01em;
 }
 
-.footer-name {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  color: var(--ink-2);
-  margin: 0.2rem 0 0;
+@media (max-width: 720px) {
+  .footer-logo { height: 104px; }
 }
 
 /* =============================================================
