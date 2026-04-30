@@ -88,6 +88,8 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* учитываем sticky-зоны для якорных ссылок (#how, #slots) */
+  scroll-padding-top: var(--space-5);
 }
 
 body {
@@ -106,6 +108,19 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* iOS Safari: убираем серый прямоугольник на тапе */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Никаких 300ms-задержек на тапе и убираем tap-highlight у всего интерактивного */
+a,
+button,
+label,
+input,
+select,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 body::before {
@@ -162,8 +177,15 @@ svg {
 }
 
 .container {
-  width: min(1120px, calc(100% - var(--space-6)));
+  /* На мобилках 16px полей с краёв, на десктопе — 32px */
+  width: min(1120px, calc(100% - clamp(2rem, 4vw, var(--space-6))));
   margin: 0 auto;
+}
+
+@media (max-width: 480px) {
+  .container {
+    width: calc(100% - var(--space-4));
+  }
 }
 
 /* =============================================================
@@ -306,6 +328,15 @@ p {
   100% { transform: translate3d(-1%, 1.5%, 0) scale(1.02); }
 }
 
+/* На мобилках filter:blur(20px) с анимацией = просадка FPS и нагрев батареи.
+   Оставляем сами градиенты, но без blur и без анимации. */
+@media (max-width: 768px) {
+  .hero-aurora {
+    filter: none;
+    animation: none;
+  }
+}
+
 /* Subtle grid lines */
 .hero-grid {
   position: absolute;
@@ -430,30 +461,32 @@ p {
   mix-blend-mode: overlay;
 }
 
-.cta:not(.cta-secondary):hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-    0 12px 36px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(196, 169, 98, 0.4),
-    0 0 24px rgba(196, 169, 98, 0.25);
-}
+@media (hover: hover) {
+  .cta:not(.cta-secondary):hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.5) inset,
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+      0 12px 36px rgba(0, 0, 0, 0.34),
+      0 0 0 1px rgba(196, 169, 98, 0.4),
+      0 0 24px rgba(196, 169, 98, 0.25);
+  }
 
-.cta:not(.cta-secondary):hover::before {
-  transform: translateX(110%);
+  .cta:not(.cta-secondary):hover::before {
+    transform: translateX(110%);
+  }
+
+  .cta:hover svg {
+    transform: translateX(3px);
+  }
 }
 
 .cta:not(.cta-secondary):active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 .cta svg {
   transition: transform var(--duration-2) var(--ease-out-expo);
-}
-
-.cta:hover svg {
-  transform: translateX(3px);
 }
 
 .cta-secondary {
@@ -463,10 +496,17 @@ p {
   backdrop-filter: blur(12px);
 }
 
-.cta-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(232, 210, 150, 0.55);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .cta-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(232, 210, 150, 0.55);
+    transform: translateY(-1px);
+  }
+}
+
+.cta-secondary:active {
+  background: rgba(255, 255, 255, 0.06);
+  transform: scale(0.98);
 }
 
 /* Hero stats */
@@ -567,10 +607,12 @@ p {
   opacity: 0.7;
 }
 
-.step-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(196, 169, 98, 0.3);
-  box-shadow: var(--shadow-2);
+@media (hover: hover) {
+  .step-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(196, 169, 98, 0.3);
+    box-shadow: var(--shadow-2);
+  }
 }
 
 .step-num {
@@ -630,14 +672,16 @@ p {
   transition: opacity var(--duration-2) var(--ease-out-expo);
 }
 
-.slot-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(196, 169, 98, 0.3);
-  box-shadow: var(--shadow-2);
-}
+@media (hover: hover) {
+  .slot-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(196, 169, 98, 0.3);
+    box-shadow: var(--shadow-2);
+  }
 
-.slot-card:hover::before {
-  opacity: 1;
+  .slot-card:hover::before {
+    opacity: 1;
+  }
 }
 
 .slot-card h3 {
@@ -725,24 +769,39 @@ input[type="email"],
 input[type="number"],
 select {
   width: 100%;
+  /* минимум 16px — иначе iOS Safari зумит страницу при фокусе */
+  font-size: 16px;
+  /* высота >= 44px для touch-target */
+  min-height: 48px;
   padding: 0.85rem 1rem;
-  font: inherit;
-  font-size: 0.9375rem;
+  font-family: inherit;
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line-2);
   border-radius: var(--radius-md);
+  appearance: none;
+  -webkit-appearance: none;
   transition:
     border-color var(--duration-2) var(--ease-out-expo),
     box-shadow var(--duration-2) var(--ease-out-expo),
     background var(--duration-2) var(--ease-out-expo);
 }
 
-input[type="text"]:hover,
-input[type="email"]:hover,
-input[type="number"]:hover,
-select:hover {
-  border-color: rgba(20, 22, 28, 0.22);
+/* Кастомная иконка-стрелка для select (нативная скрыта appearance: none) */
+select {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2341475a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+@media (hover: hover) {
+  input[type="text"]:hover,
+  input[type="email"]:hover,
+  input[type="number"]:hover,
+  select:hover {
+    border-color: rgba(20, 22, 28, 0.22);
+  }
 }
 
 input[type="text"]:focus,
@@ -774,6 +833,7 @@ input::placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 48px;
   padding: 0.85rem 0.5rem;
   background: var(--surface-2);
   border: 1px solid var(--line-2);
@@ -792,9 +852,11 @@ input::placeholder {
     transform var(--duration-1) var(--ease-out-expo);
 }
 
-.chip:hover {
-  border-color: rgba(20, 22, 28, 0.22);
-  background: var(--surface);
+@media (hover: hover) {
+  .chip:hover {
+    border-color: rgba(20, 22, 28, 0.22);
+    background: var(--surface);
+  }
 }
 
 .chip:active {
@@ -856,6 +918,7 @@ input::placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   padding: 0.7rem 1rem;
   margin: 0;
   border-radius: var(--radius-pill);
@@ -952,28 +1015,30 @@ input::placeholder {
   pointer-events: none;
 }
 
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 12px 32px rgba(15, 18, 25, 0.3),
-    0 0 0 1px rgba(232, 210, 150, 0.28) inset;
-}
+@media (hover: hover) {
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 12px 32px rgba(15, 18, 25, 0.3),
+      0 0 0 1px rgba(232, 210, 150, 0.28) inset;
+  }
 
-.btn-primary:hover::before {
-  transform: translateX(110%);
+  .btn-primary:hover::before {
+    transform: translateX(110%);
+  }
+
+  .btn-primary:hover svg {
+    transform: translateX(3px);
+  }
 }
 
 .btn-primary:active {
-  transform: translateY(0);
+  transform: scale(0.985);
 }
 
 .btn-primary svg {
   transition: transform var(--duration-2) var(--ease-out-expo);
-}
-
-.btn-primary:hover svg {
-  transform: translateX(3px);
 }
 
 .form-message {
@@ -1019,7 +1084,8 @@ input::placeholder {
    ============================================================= */
 
 .footer {
-  padding: var(--space-7) 0 var(--space-8);
+  /* учитываем home indicator на iPhone */
+  padding: var(--space-7) 0 calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
   font-size: 0.9rem;
   color: var(--ink-muted);
   text-align: center;
@@ -1048,6 +1114,91 @@ input::placeholder {
 [data-reveal].is-visible {
   opacity: 1;
   transform: none;
+}
+
+/* =============================================================
+   Mobile polish (≤ 768px) — typography, layout, touch ergonomics
+   ============================================================= */
+
+@media (max-width: 768px) {
+  /* Чуть мягче основной шрифт */
+  body { font-size: 16px; }
+
+  /* Hero: меньше воздуха, плотнее заголовок */
+  .hero {
+    padding: clamp(3.5rem, 14vw, 5rem) 0 clamp(3rem, 11vw, 4.5rem);
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 8vw, 2.6rem);
+    max-width: 100%;
+  }
+  .lead {
+    font-size: 1.0625rem;
+  }
+
+  /* CTA на мобилке — в столбик и во всю ширину контейнера */
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  .cta {
+    width: 100%;
+    padding: 0.95rem 1.4rem;
+  }
+
+  /* Секции — поджимаем верх/низ */
+  .section {
+    padding: clamp(2.5rem, 8vw, 4rem) 0 var(--space-2);
+  }
+
+  /* Карточки шагов и слотов — ровные, плотнее */
+  .step-card,
+  .slot-card {
+    padding: var(--space-4);
+  }
+
+  .steps-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-3);
+  }
+
+  /* Форма: меньше отступов внутри карточки */
+  .support-form {
+    padding: var(--space-5) var(--space-4);
+    border-radius: var(--radius-lg);
+    gap: var(--space-3);
+  }
+
+  /* Чипы быстрых сумм — гарантируем минимум 3 в ряд на узких телефонах */
+  .amount-chips {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  /* Сегмент-переключатель — растягиваем «бегунок» на всю ширину половины */
+  .segmented label {
+    padding: 0.85rem 0.5rem;
+  }
+}
+
+@media (max-width: 380px) {
+  /* Совсем узкие — iPhone SE и меньше */
+  .amount-chips {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .chip {
+    font-size: 0.9rem;
+  }
+  .cta-secondary,
+  .cta:not(.cta-secondary) {
+    font-size: 0.875rem;
+  }
 }
 
 /* =============================================================
