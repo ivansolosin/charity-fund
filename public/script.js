@@ -169,8 +169,9 @@ supportForm.addEventListener("submit", async (event) => {
     slot.funded += paymentAmount;
     renderSlots();
 
+    const pledgeType = frequency === "monthly" ? "ежемесячное" : "разовое";
     setFormSuccess(
-      `Заявка отправлена координатору фонда. Вам будет выслан счёт на оплату на email ${email}. По мере реализации слота будет сделан фотоотчёт и предоставлен отчёт о реализации.`
+      `Принято ${pledgeType} пожертвование на ${rub(paymentAmount)}. Вам на email будет отправлен счёт на оплату. Позже вам будет предоставлен отчёт по реализации слота. Спасибо!`
     );
 
     supportForm.reset();
