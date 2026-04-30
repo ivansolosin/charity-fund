@@ -78,6 +78,7 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       slotTitle,
       participantName,
       email,
+      phone,
       amount,
       frequency,
     } = req.body || {};
@@ -91,6 +92,23 @@ app.post("/api/apply", rateLimit, async (req, res) => {
     if (typeof email !== "string" || !isEmail(email) || email.length > 200) {
       return res.status(400).json({ ok: false, error: "Невалидный email." });
     }
+
+    // Phone: ожидаем +7XXXXXXXXXX (12 символов), но допускаем любую кириллицу/пробелы/скобки
+    let phoneNormalized = "";
+    if (typeof phone === "string" && phone.trim()) {
+      let digits = phone.replace(/\D/g, "");
+      if (digits.startsWith("8") && digits.length === 11) digits = "7" + digits.slice(1);
+      if (digits.startsWith("7") && digits.length === 11) {
+        phoneNormalized = "+" + digits;
+      } else if (digits.length === 10) {
+        phoneNormalized = "+7" + digits;
+      } else {
+        return res.status(400).json({ ok: false, error: "Невалидный номер телефона." });
+      }
+    } else {
+      return res.status(400).json({ ok: false, error: "Укажите телефон для связи." });
+    }
+
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0 || amt > 10_000_000) {
       return res.status(400).json({ ok: false, error: "Невалидная сумма." });
@@ -102,6 +120,7 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       slotTitle: slotTitle || slot,
       participantName: participantName.trim(),
       email: email.trim(),
+      phone: phoneNormalized,
       amount: amt,
       frequency: freq,
       ts: new Date().toISOString(),
@@ -129,6 +148,7 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       `<b>Сумма:</b> ${escapeHtml(fmtRub(amt))}`,
       `<b>Частота:</b> ${freq === "monthly" ? "Ежемесячно" : "Разово"}`,
       `<b>Участник:</b> ${escapeHtml(submission.participantName)}`,
+      `<b>Телефон:</b> <a href="tel:${escapeHtml(submission.phone)}">${escapeHtml(submission.phone)}</a>`,
       `<b>Email:</b> <code>${escapeHtml(submission.email)}</code>`,
       "",
       `<i>${escapeHtml(submission.ts)}</i>`,

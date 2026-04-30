@@ -818,6 +818,64 @@ input::placeholder {
   color: rgba(20, 22, 28, 0.32);
 }
 
+/* Phone field with fixed +7 prefix */
+.phone-field {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition:
+    border-color var(--duration-2) var(--ease-out-expo),
+    box-shadow var(--duration-2) var(--ease-out-expo),
+    background var(--duration-2) var(--ease-out-expo);
+}
+
+.phone-field:focus-within {
+  border-color: var(--accent-rich);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  background: var(--surface);
+}
+
+.phone-prefix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.875rem 0 1rem;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--line-2);
+  background: rgba(20, 22, 28, 0.025);
+  user-select: none;
+  pointer-events: none;
+}
+
+.phone-field input[type="tel"] {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  /* свой focus-стиль убираем — кольцо рисуется на phone-field */
+}
+
+.phone-field input[type="tel"]:focus {
+  box-shadow: none;
+  background: transparent;
+  border: 0;
+}
+
+@media (hover: hover) {
+  .phone-field:hover {
+    border-color: rgba(20, 22, 28, 0.22);
+  }
+}
+
 /* Amount chips */
 .amount-chips {
   border: 0;

@@ -84,6 +84,54 @@ amountPresetInputs.forEach((input) => {
   input.addEventListener("change", syncCustomAmountVisibility);
 });
 
+/* =============================================================
+   Phone — autoformat as user types: (999) 123-45-67
+   Stored value (returned by getPhoneDigits) is bare 10 digits.
+   ============================================================= */
+
+const phoneInput = document.getElementById("phone");
+
+function formatPhoneDigits(digits) {
+  // digits = 0..10 raw digits, no +7
+  const a = digits.slice(0, 3);
+  const b = digits.slice(3, 6);
+  const c = digits.slice(6, 8);
+  const d = digits.slice(8, 10);
+  let out = "";
+  if (a) out += `(${a}`;
+  if (a.length === 3) out += `)`;
+  if (b) out += ` ${b}`;
+  if (c) out += `-${c}`;
+  if (d) out += `-${d}`;
+  return out;
+}
+
+function getPhoneDigits() {
+  return (phoneInput.value || "").replace(/\D/g, "").slice(0, 10);
+}
+
+if (phoneInput) {
+  phoneInput.addEventListener("input", () => {
+    let digits = phoneInput.value.replace(/\D/g, "");
+    // если пользователь начал вводить и первая цифра 7 или 8 — отрезаем (это код страны)
+    if (digits.length > 10 && (digits.startsWith("7") || digits.startsWith("8"))) {
+      digits = digits.slice(1);
+    }
+    digits = digits.slice(0, 10);
+    phoneInput.value = formatPhoneDigits(digits);
+  });
+
+  // Если пользователь вставил «+7 (999) …» или «8 999 …» — нормализуем
+  phoneInput.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text");
+    let digits = text.replace(/\D/g, "");
+    if (digits.startsWith("7") || digits.startsWith("8")) digits = digits.slice(1);
+    digits = digits.slice(0, 10);
+    phoneInput.value = formatPhoneDigits(digits);
+  });
+}
+
 function setFormError(text) {
   formMessage.textContent = text;
   formMessage.classList.add("is-error");
@@ -106,12 +154,19 @@ supportForm.addEventListener("submit", async (event) => {
 
   const participantName = document.getElementById("participantName").value.trim();
   const email = document.getElementById("email").value.trim();
+  const phoneDigits = getPhoneDigits();
   const preset = getSelectedAmountPreset();
   const frequency = getSelectedFrequency();
   const remainder = Math.max(slot.total - slot.funded, 0);
 
   if (!participantName || !email) {
     setFormError("Заполните ФИО/организацию и email.");
+    return;
+  }
+
+  if (phoneDigits.length !== 10) {
+    setFormError("Введите телефон полностью: 10 цифр после +7.");
+    phoneInput.focus();
     return;
   }
 
@@ -152,6 +207,7 @@ supportForm.addEventListener("submit", async (event) => {
         slotTitle: slot.title,
         participantName,
         email,
+        phone: `+7${phoneDigits}`,
         amount: paymentAmount,
         frequency,
       }),
