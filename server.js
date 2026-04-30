@@ -81,10 +81,18 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       phone,
       amount,
       frequency,
+      consent,
+      consentTs,
     } = req.body || {};
 
     if (!slot || !participantName || !email || amount == null) {
       return res.status(400).json({ ok: false, error: "Заполните все поля." });
+    }
+    if (consent !== true) {
+      return res.status(400).json({
+        ok: false,
+        error: "Для отправки заявки необходимо согласие на обработку персональных данных.",
+      });
     }
     if (typeof participantName !== "string" || participantName.trim().length < 2 || participantName.length > 200) {
       return res.status(400).json({ ok: false, error: "Имя должно быть от 2 до 200 символов." });
@@ -115,6 +123,15 @@ app.post("/api/apply", rateLimit, async (req, res) => {
     }
     const freq = frequency === "monthly" ? "monthly" : "once";
 
+    // Согласие: используем клиентскую метку времени, если она вменяемая,
+    // иначе — серверное «сейчас». Это не доверенная подпись, но подтверждает,
+    // что заявка прошла именно через нашу форму с активным чекбоксом.
+    const submittedTs = new Date().toISOString();
+    const consentTimestamp =
+      typeof consentTs === "string" && !Number.isNaN(Date.parse(consentTs))
+        ? consentTs
+        : submittedTs;
+
     const submission = {
       slot,
       slotTitle: slotTitle || slot,
@@ -123,7 +140,9 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       phone: phoneNormalized,
       amount: amt,
       frequency: freq,
-      ts: new Date().toISOString(),
+      consent: true,
+      consentTs: consentTimestamp,
+      ts: submittedTs,
       ip:
         (req.headers["x-forwarded-for"] || "").toString().split(",")[0].trim() ||
         req.ip ||
@@ -151,6 +170,7 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       `<b>Телефон:</b> <a href="tel:${escapeHtml(submission.phone)}">${escapeHtml(submission.phone)}</a>`,
       `<b>Email:</b> <code>${escapeHtml(submission.email)}</code>`,
       "",
+      `✅ <i>Согласие на обработку персональных данных получено</i>`,
       `<i>${escapeHtml(submission.ts)}</i>`,
     ].join("\n");
 

@@ -170,6 +170,13 @@ supportForm.addEventListener("submit", async (event) => {
     return;
   }
 
+  const consentCheckbox = document.getElementById("consent");
+  if (!consentCheckbox.checked) {
+    setFormError("Для отправки заявки необходимо согласие на обработку персональных данных.");
+    consentCheckbox.focus();
+    return;
+  }
+
   if (remainder === 0) {
     setFormError("Этот слот уже полностью закрыт. Выберите другой.");
     return;
@@ -210,6 +217,8 @@ supportForm.addEventListener("submit", async (event) => {
         phone: `+7${phoneDigits}`,
         amount: paymentAmount,
         frequency,
+        consent: true,
+        consentTs: new Date().toISOString(),
       }),
     });
 
