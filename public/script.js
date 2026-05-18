@@ -27,6 +27,12 @@ const customAmountInput = document.getElementById("customAmount");
 const formMessage = document.getElementById("formMessage");
 const amountPresetInputs = document.querySelectorAll('input[name="amountPreset"]');
 const frequencyInputs = document.querySelectorAll('input[name="frequency"]');
+const offerAcceptedCheckbox = document.getElementById("offerAccepted");
+const privacyAcceptedCheckbox = document.getElementById("privacyAccepted");
+const recurringConsentWrap = document.getElementById("recurringConsentWrap");
+const recurringAcceptedCheckbox = document.getElementById("recurringAccepted");
+
+const LEGAL_VERSION = "2026-05-18";
 
 const rub = (value) => `${value.toLocaleString("ru-RU")} ₽`;
 
@@ -80,8 +86,21 @@ function syncCustomAmountVisibility() {
   customAmountInput.required = isCustom;
 }
 
+function syncRecurringConsentVisibility() {
+  const isMonthly = getSelectedFrequency() === "monthly";
+  recurringConsentWrap.classList.toggle("is-hidden", !isMonthly);
+  recurringAcceptedCheckbox.required = isMonthly;
+  if (!isMonthly) {
+    recurringAcceptedCheckbox.checked = false;
+  }
+}
+
 amountPresetInputs.forEach((input) => {
   input.addEventListener("change", syncCustomAmountVisibility);
+});
+
+frequencyInputs.forEach((input) => {
+  input.addEventListener("change", syncRecurringConsentVisibility);
 });
 
 /* =============================================================
@@ -189,10 +208,22 @@ supportForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  const consentCheckbox = document.getElementById("consent");
-  if (!consentCheckbox.checked) {
-    setFormError("Для отправки заявки необходимо согласие на обработку персональных данных.");
-    consentCheckbox.focus();
+  if (!offerAcceptedCheckbox.checked) {
+    setFormError("Для отправки заявки необходимо принять условия Оферты.");
+    offerAcceptedCheckbox.focus();
+    return;
+  }
+  if (!privacyAcceptedCheckbox.checked) {
+    setFormError("Для отправки заявки необходимо согласие с Политикой обработки персональных данных.");
+    privacyAcceptedCheckbox.focus();
+    return;
+  }
+  const isMonthly = frequency === "monthly";
+  if (isMonthly && !recurringAcceptedCheckbox.checked) {
+    setFormError(
+      "Для ежемесячного платежа необходимо согласие на регулярное списание и ознакомление с порядком отмены подписки."
+    );
+    recurringAcceptedCheckbox.focus();
     return;
   }
 
@@ -236,8 +267,14 @@ supportForm.addEventListener("submit", async (event) => {
         phone: `+7${phoneDigits}`,
         amount: paymentAmount,
         frequency,
-        consent: true,
-        consentTs: new Date().toISOString(),
+        offerAccepted: true,
+        privacyAccepted: true,
+        recurringAccepted: isMonthly && recurringAcceptedCheckbox.checked,
+        cancellationTermsAccepted: isMonthly && recurringAcceptedCheckbox.checked,
+        offerVersion: LEGAL_VERSION,
+        privacyPolicyVersion: LEGAL_VERSION,
+        subscriptionTermsVersion: LEGAL_VERSION,
+        consentClientTimestamp: new Date().toISOString(),
       }),
     });
 
@@ -262,6 +299,7 @@ supportForm.addEventListener("submit", async (event) => {
     document.querySelector('input[name="amountPreset"][value="500"]').checked = true;
     document.getElementById("freqMonthly").checked = true;
     syncCustomAmountVisibility();
+    syncRecurringConsentVisibility();
   } catch (err) {
     setFormError(err.message || "Что-то пошло не так. Попробуйте ещё раз.");
   } finally {
@@ -407,3 +445,4 @@ if ("IntersectionObserver" in window) {
 
 renderSlots();
 syncCustomAmountVisibility();
+syncRecurringConsentVisibility();

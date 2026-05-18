@@ -40,6 +40,19 @@ const escapeHtml = (s) =>
   String(s).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
 const fmtRub = (n) => n.toLocaleString("ru-RU") + " ₽";
 
+function getClientIp(req) {
+  return (
+    (req.headers["x-forwarded-for"] || "").toString().split(",")[0].trim() ||
+    req.socket?.remoteAddress ||
+    req.ip ||
+    null
+  );
+}
+
+function isIsoTimestamp(value) {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value));
+}
+
 // ---- Naive in-memory rate limit (per IP, sliding 1 min window) ----
 const RATE_LIMIT = 10;
 const RATE_WINDOW = 60_000;
@@ -81,17 +94,29 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       phone,
       amount,
       frequency,
-      consent,
-      consentTs,
+      offerAccepted,
+      privacyAccepted,
+      recurringAccepted,
+      cancellationTermsAccepted,
+      offerVersion,
+      privacyPolicyVersion,
+      subscriptionTermsVersion,
+      consentClientTimestamp,
     } = req.body || {};
 
     if (!slot || !participantName || !email || amount == null) {
       return res.status(400).json({ ok: false, error: "Заполните все поля." });
     }
-    if (consent !== true) {
+    if (offerAccepted !== true) {
       return res.status(400).json({
         ok: false,
-        error: "Для отправки заявки необходимо согласие на обработку персональных данных.",
+        error: "Для отправки заявки необходимо принять условия Оферты.",
+      });
+    }
+    if (privacyAccepted !== true) {
+      return res.status(400).json({
+        ok: false,
+        error: "Для отправки заявки необходимо согласие с Политикой обработки персональных данных.",
       });
     }
     if (typeof participantName !== "string" || participantName.trim().length < 2 || participantName.length > 200) {
@@ -138,14 +163,26 @@ app.post("/api/apply", rateLimit, async (req, res) => {
     }
     const freq = frequency === "monthly" ? "monthly" : "once";
 
-    // Согласие: используем клиентскую метку времени, если она вменяемая,
-    // иначе — серверное «сейчас». Это не доверенная подпись, но подтверждает,
-    // что заявка прошла именно через нашу форму с активным чекбоксом.
-    const submittedTs = new Date().toISOString();
-    const consentTimestamp =
-      typeof consentTs === "string" && !Number.isNaN(Date.parse(consentTs))
-        ? consentTs
-        : submittedTs;
+    if (freq === "monthly") {
+      if (recurringAccepted !== true) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Для ежемесячного платежа необходимо согласие на регулярное автоматическое списание.",
+        });
+      }
+      if (cancellationTermsAccepted !== true) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Для ежемесячного платежа необходимо ознакомление с порядком отмены подписки.",
+        });
+      }
+    }
+
+    const consentServerTimestamp = new Date().toISOString();
+    const userIp = getClientIp(req);
+    const userAgent = req.headers["user-agent"] || "";
 
     const submission = {
       slot,
@@ -155,14 +192,22 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       phone: phoneNormalized,
       amount: amt,
       frequency: freq,
-      consent: true,
-      consentTs: consentTimestamp,
-      ts: submittedTs,
-      ip:
-        (req.headers["x-forwarded-for"] || "").toString().split(",")[0].trim() ||
-        req.ip ||
-        null,
-      ua: req.headers["user-agent"] || null,
+      offerAccepted: true,
+      privacyAccepted: true,
+      recurringAccepted: freq === "monthly",
+      cancellationTermsAccepted: freq === "monthly",
+      offerVersion: typeof offerVersion === "string" ? offerVersion : null,
+      privacyPolicyVersion:
+        typeof privacyPolicyVersion === "string" ? privacyPolicyVersion : null,
+      subscriptionTermsVersion:
+        typeof subscriptionTermsVersion === "string" ? subscriptionTermsVersion : null,
+      consentClientTimestamp: isIsoTimestamp(consentClientTimestamp)
+        ? consentClientTimestamp
+        : null,
+      consentServerTimestamp,
+      userIp,
+      userAgent,
+      ts: consentServerTimestamp,
     };
 
     // If Telegram not configured — log & accept.
@@ -185,8 +230,16 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       `<b>Телефон:</b> <a href="tel:${escapeHtml(submission.phone)}">${escapeHtml(submission.phone)}</a>`,
       `<b>Email:</b> <code>${escapeHtml(submission.email)}</code>`,
       "",
-      `✅ <i>Согласие на обработку персональных данных получено</i>`,
-      `<i>${escapeHtml(submission.ts)}</i>`,
+      "<b>Согласия:</b>",
+      `• Оферта: ${submission.offerAccepted ? "да" : "нет"} (${escapeHtml(submission.offerVersion || "—")})`,
+      `• Политика ПД: ${submission.privacyAccepted ? "да" : "нет"} (${escapeHtml(submission.privacyPolicyVersion || "—")})`,
+      `• Регулярное списание: ${submission.recurringAccepted ? "да" : "нет"}`,
+      `• Отмена подписки: ${submission.cancellationTermsAccepted ? "да" : "нет"} (${escapeHtml(submission.subscriptionTermsVersion || "—")})`,
+      "",
+      `<b>Клиент (UTC):</b> <code>${escapeHtml(submission.consentClientTimestamp || "—")}</code>`,
+      `<b>Сервер (UTC):</b> <code>${escapeHtml(submission.consentServerTimestamp)}</code>`,
+      `<b>IP:</b> <code>${escapeHtml(submission.userIp || "—")}</code>`,
+      `<b>User-Agent:</b> <code>${escapeHtml(submission.userAgent || "—")}</code>`,
     ].join("\n");
 
     const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;

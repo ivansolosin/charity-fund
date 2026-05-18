@@ -214,18 +214,44 @@
 
           <p class="form-required-note">* — поля, обязательные к заполнению.</p>
 
-          <label class="consent">
-            <input id="consent" type="checkbox" required />
-            <span class="consent-box" aria-hidden="true">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
-                <path d="M3 8.5l3.2 3 6.3-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </span>
-            <span class="consent-text">
-              Я согласен на обработку персональных данных в соответствии с
-              <a href="/privacy" target="_blank" rel="noopener">политикой</a>.
-            </span>
-          </label>
+          <fieldset class="consents-group" aria-label="Согласия">
+            <label class="consent">
+              <input id="offerAccepted" type="checkbox" required />
+              <span class="consent-box" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+                  <path d="M3 8.5l3.2 3 6.3-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span class="consent-text">
+                Я ознакомлен и принимаю условия
+                <a href="/offer.html" target="_blank" rel="noopener">Оферты</a>
+              </span>
+            </label>
+            <label class="consent">
+              <input id="privacyAccepted" type="checkbox" required />
+              <span class="consent-box" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+                  <path d="M3 8.5l3.2 3 6.3-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span class="consent-text">
+                Я согласен с
+                <a href="/privacy.html" target="_blank" rel="noopener">Политикой обработки персональных данных</a>
+              </span>
+            </label>
+            <label id="recurringConsentWrap" class="consent">
+              <input id="recurringAccepted" type="checkbox" />
+              <span class="consent-box" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+                  <path d="M3 8.5l3.2 3 6.3-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span class="consent-text">
+                Я соглашаюсь на регулярное автоматическое списание денежных средств и ознакомлен с
+                <a href="/subscription-cancel.html" target="_blank" rel="noopener">порядком отмены подписки</a>
+              </span>
+            </label>
+          </fieldset>
 
           <button type="submit" class="btn-primary" data-magnetic>
             <span>Продолжить</span>
@@ -246,7 +272,10 @@
         </div>
         <p>Спасибо, что помогаете нашим детям расти в живой, человечной среде. Каждый вклад — кирпичик нашей школы.</p>
         <p class="footer-links">
-          <a href="/privacy">Политика обработки персональных данных</a>
+          <a href="/offer.html">Оферта</a>
+          <a href="/privacy.html">Политика обработки персональных данных</a>
+          <a href="/subscription-cancel.html">Отмена подписки</a>
+          <a href="/contacts.html">Контакты</a>
         </p>
       </div>
     </footer>
