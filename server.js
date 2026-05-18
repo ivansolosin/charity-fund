@@ -1,13 +1,16 @@
 // =============================================================
 // charity-fund — Express server
 // - serves /public as static
-// - POST /api/apply — receives applications, forwards to Telegram
-// - GET /healthz   — liveness probe
+// - GET  /api/slots — active slots with funded progress
+// - POST /api/apply — applications + consents → PostgreSQL, Telegram notify
+// - GET  /api/applications/:id — public application status
+// - GET  /healthz   — liveness + DB probe
 // =============================================================
 
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkDb, isDbConfigured, query, withTransaction } from "./db.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,6 +18,9 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 app.disable("x-powered-by");
 app.set("trust proxy", true);
@@ -42,7 +48,7 @@ const fmtRub = (n) => n.toLocaleString("ru-RU") + " ₽";
 
 function getClientIp(req) {
   return (
-    (req.headers["x-forwarded-for"] || "").toString().split(",")[0].trim() ||
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
     req.socket?.remoteAddress ||
     req.ip ||
     null
@@ -51,6 +57,13 @@ function getClientIp(req) {
 
 function isIsoTimestamp(value) {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
+}
+
+function requireDb(_req, res, next) {
+  if (!isDbConfigured()) {
+    return res.status(503).json({ ok: false, error: "База данных не настроена." });
+  }
+  next();
 }
 
 // ---- Naive in-memory rate limit (per IP, sliding 1 min window) ----
@@ -73,7 +86,6 @@ function rateLimit(req, res, next) {
   next();
 }
 
-// Periodic cleanup so Map doesn't grow forever
 setInterval(() => {
   const now = Date.now();
   for (const [ip, times] of ipHits) {
@@ -83,8 +95,139 @@ setInterval(() => {
   }
 }, RATE_WINDOW).unref();
 
+// ---- GET /api/slots ----
+app.get("/api/slots", requireDb, async (_req, res) => {
+  try {
+    // TODO(payments): after payment integration, count only applications with status = 'paid'
+    const { rows } = await query(
+      `SELECT
+         s.id,
+         s.title,
+         s.description,
+         s.goal_amount,
+         s.initial_funded_amount,
+         s.is_active,
+         COALESCE(SUM(a.amount), 0)::integer AS applications_sum
+       FROM support_slots s
+       LEFT JOIN applications a
+         ON a.slot_id = s.id
+         AND a.status IN ('created', 'pending_payment', 'paid')
+       WHERE s.is_active = true
+       GROUP BY s.id, s.title, s.description, s.goal_amount, s.initial_funded_amount, s.is_active
+       ORDER BY s.id`
+    );
+
+    const slots = rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description || "",
+      goal: row.goal_amount,
+      funded: row.initial_funded_amount + row.applications_sum,
+      isActive: row.is_active,
+    }));
+
+    return res.json(slots);
+  } catch (err) {
+    console.error("[slots] db error:", err.message);
+    return res.status(500).json({ ok: false, error: "Не удалось загрузить слоты." });
+  }
+});
+
+// ---- GET /api/applications/:id ----
+app.get("/api/applications/:id", requireDb, async (req, res) => {
+  const { id } = req.params;
+  if (!UUID_RE.test(id)) {
+    return res.status(400).json({ ok: false, error: "Некорректный идентификатор заявки." });
+  }
+
+  try {
+    const { rows } = await query(
+      `SELECT id, slot_title, email, amount, frequency, status, created_at
+       FROM applications
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "Заявка не найдена." });
+    }
+
+    const row = rows[0];
+    return res.json({
+      id: row.id,
+      slotTitle: row.slot_title,
+      email: row.email,
+      amount: row.amount,
+      frequency: row.frequency,
+      status: row.status,
+      createdAt: row.created_at,
+    });
+  } catch (err) {
+    console.error("[applications] db error:", err.message);
+    return res.status(500).json({ ok: false, error: "Не удалось получить заявку." });
+  }
+});
+
+async function sendTelegramNotification(submission) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.warn(
+      "[apply] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set — notification skipped."
+    );
+    return false;
+  }
+
+  const freq = submission.frequency;
+  const text = [
+    "🆕 <b>Новая заявка в фонд</b>",
+    "",
+    `<b>ID заявки:</b> <code>${escapeHtml(submission.applicationId)}</code>`,
+    `<b>Слот:</b> ${escapeHtml(submission.slotTitle)}`,
+    `<b>Сумма:</b> ${escapeHtml(fmtRub(submission.amount))}`,
+    `<b>Частота:</b> ${freq === "monthly" ? "Ежемесячно" : "Разово"}`,
+    `<b>Участник:</b> ${escapeHtml(submission.participantName || "—")}`,
+    submission.phone
+      ? `<b>Телефон:</b> <a href="tel:${escapeHtml(submission.phone)}">${escapeHtml(submission.phone)}</a>`
+      : "",
+    `<b>Email:</b> <code>${escapeHtml(submission.email)}</code>`,
+    `<b>Статус:</b> ${escapeHtml(submission.status)}`,
+    "",
+    "<b>Согласия:</b>",
+    `• Оферта: ${submission.offerAccepted ? "да" : "нет"} (${escapeHtml(submission.offerVersion || "—")})`,
+    `• Политика ПД: ${submission.privacyAccepted ? "да" : "нет"} (${escapeHtml(submission.privacyPolicyVersion || "—")})`,
+    `• Регулярное списание: ${submission.recurringAccepted ? "да" : "нет"}`,
+    `• Отмена подписки: ${submission.cancellationTermsAccepted ? "да" : "нет"} (${escapeHtml(submission.subscriptionTermsVersion || "—")})`,
+    "",
+    `<b>Клиент (UTC):</b> <code>${escapeHtml(submission.consentClientTimestamp || "—")}</code>`,
+    `<b>Сервер (UTC):</b> <code>${escapeHtml(submission.consentServerTimestamp)}</code>`,
+    `<b>IP:</b> <code>${escapeHtml(submission.userIp || "—")}</code>`,
+    `<b>User-Agent:</b> <code>${escapeHtml(submission.userAgent || "—")}</code>`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const tgRes = await fetch(tgUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    }),
+  });
+
+  if (!tgRes.ok) {
+    const errText = await tgRes.text().catch(() => "");
+    console.error("[apply] telegram error:", tgRes.status, errText.slice(0, 200));
+    return false;
+  }
+
+  return true;
+}
+
 // ---- POST /api/apply ----
-app.post("/api/apply", rateLimit, async (req, res) => {
+app.post("/api/apply", rateLimit, requireDb, async (req, res) => {
   try {
     const {
       slot,
@@ -104,8 +247,11 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       consentClientTimestamp,
     } = req.body || {};
 
-    if (!slot || !participantName || !email || amount == null) {
-      return res.status(400).json({ ok: false, error: "Заполните все поля." });
+    if (!slot || typeof slot !== "string") {
+      return res.status(400).json({ ok: false, error: "Выберите слот." });
+    }
+    if (!slotTitle || typeof slotTitle !== "string" || !slotTitle.trim()) {
+      return res.status(400).json({ ok: false, error: "Укажите название слота." });
     }
     if (offerAccepted !== true) {
       return res.status(400).json({
@@ -136,12 +282,11 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       return res.status(400).json({ ok: false, error: "Введите корректный email." });
     }
 
-    // Phone: ожидаем +7XXXXXXXXXX (12 символов), но допускаем любую кириллицу/пробелы/скобки
-    let phoneNormalized = "";
-    if (typeof phone !== "string" || !phone.trim()) {
-      return res.status(400).json({ ok: false, error: "Укажите телефон для связи." });
-    }
-    {
+    let phoneNormalized = null;
+    if (phone != null && String(phone).trim() !== "") {
+      if (typeof phone !== "string") {
+        return res.status(400).json({ ok: false, error: "Укажите телефон для связи." });
+      }
       let digits = phone.replace(/\D/g, "");
       if (digits.startsWith("8") && digits.length === 11) digits = "7" + digits.slice(1);
       if (digits.startsWith("7") && digits.length === 11) {
@@ -155,13 +300,19 @@ app.post("/api/apply", rateLimit, async (req, res) => {
           error: `В номере не хватает цифр: получено ${after7.length} из 10. Полный формат: +7 (999) 123-45-67.`,
         });
       }
+    } else {
+      return res.status(400).json({ ok: false, error: "Укажите телефон для связи." });
     }
 
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0 || amt > 10_000_000) {
       return res.status(400).json({ ok: false, error: "Невалидная сумма." });
     }
+
     const freq = frequency === "monthly" ? "monthly" : "once";
+    if (freq !== "once" && freq !== "monthly") {
+      return res.status(400).json({ ok: false, error: "Некорректная частота платежа." });
+    }
 
     if (freq === "monthly") {
       if (recurringAccepted !== true) {
@@ -180,13 +331,78 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       }
     }
 
+    const offerVer = typeof offerVersion === "string" ? offerVersion.trim() : "";
+    const privacyVer = typeof privacyPolicyVersion === "string" ? privacyPolicyVersion.trim() : "";
+    const subscriptionVer =
+      typeof subscriptionTermsVersion === "string" ? subscriptionTermsVersion.trim() : "";
+    if (!offerVer || !privacyVer || !subscriptionVer) {
+      return res.status(400).json({ ok: false, error: "Отсутствуют версии юридических документов." });
+    }
+
     const consentServerTimestamp = new Date().toISOString();
     const userIp = getClientIp(req);
     const userAgent = req.headers["user-agent"] || "";
+    const clientTs = isIsoTimestamp(consentClientTimestamp) ? consentClientTimestamp : null;
 
-    const submission = {
-      slot,
-      slotTitle: slotTitle || slot,
+    let applicationId;
+    try {
+      applicationId = await withTransaction(async (client) => {
+        const appResult = await client.query(
+          `INSERT INTO applications (
+             slot_id, slot_title, participant_name, email, phone,
+             amount, frequency, status
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'created')
+           RETURNING id`,
+          [
+            slot,
+            slotTitle.trim(),
+            participantName.trim(),
+            email.trim(),
+            phoneNormalized,
+            amt,
+            freq,
+          ]
+        );
+
+        const appId = appResult.rows[0].id;
+
+        await client.query(
+          `INSERT INTO consents (
+             application_id, email,
+             offer_accepted, privacy_accepted,
+             recurring_accepted, cancellation_terms_accepted,
+             offer_version, privacy_policy_version, subscription_terms_version,
+             consent_client_timestamp, consent_server_timestamp,
+             user_ip, user_agent
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          [
+            appId,
+            email.trim(),
+            true,
+            true,
+            freq === "monthly",
+            freq === "monthly",
+            offerVer,
+            privacyVer,
+            subscriptionVer,
+            clientTs,
+            consentServerTimestamp,
+            userIp,
+            userAgent,
+          ]
+        );
+
+        return appId;
+      });
+    } catch (err) {
+      console.error("[apply] db save failed:", err.message, err.code || "");
+      return res.status(500).json({ ok: false, error: "Не удалось сохранить заявку. Попробуйте ещё раз." });
+    }
+
+    const forwarded = await sendTelegramNotification({
+      applicationId,
+      status: "created",
+      slotTitle: slotTitle.trim(),
       participantName: participantName.trim(),
       email: email.trim(),
       phone: phoneNormalized,
@@ -196,81 +412,35 @@ app.post("/api/apply", rateLimit, async (req, res) => {
       privacyAccepted: true,
       recurringAccepted: freq === "monthly",
       cancellationTermsAccepted: freq === "monthly",
-      offerVersion: typeof offerVersion === "string" ? offerVersion : null,
-      privacyPolicyVersion:
-        typeof privacyPolicyVersion === "string" ? privacyPolicyVersion : null,
-      subscriptionTermsVersion:
-        typeof subscriptionTermsVersion === "string" ? subscriptionTermsVersion : null,
-      consentClientTimestamp: isIsoTimestamp(consentClientTimestamp)
-        ? consentClientTimestamp
-        : null,
+      offerVersion: offerVer,
+      privacyPolicyVersion: privacyVer,
+      subscriptionTermsVersion: subscriptionVer,
+      consentClientTimestamp: clientTs,
       consentServerTimestamp,
       userIp,
       userAgent,
-      ts: consentServerTimestamp,
-    };
-
-    // If Telegram not configured — log & accept.
-    // (Useful in local dev so the form still feels alive.)
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-      console.warn(
-        "[apply] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set — submission accepted but not forwarded."
-      );
-      console.log("[apply] submission:", submission);
-      return res.json({ ok: true, forwarded: false });
-    }
-
-    const text = [
-      "🆕 <b>Новая заявка в фонд</b>",
-      "",
-      `<b>Слот:</b> ${escapeHtml(submission.slotTitle)}`,
-      `<b>Сумма:</b> ${escapeHtml(fmtRub(amt))}`,
-      `<b>Частота:</b> ${freq === "monthly" ? "Ежемесячно" : "Разово"}`,
-      `<b>Участник:</b> ${escapeHtml(submission.participantName)}`,
-      `<b>Телефон:</b> <a href="tel:${escapeHtml(submission.phone)}">${escapeHtml(submission.phone)}</a>`,
-      `<b>Email:</b> <code>${escapeHtml(submission.email)}</code>`,
-      "",
-      "<b>Согласия:</b>",
-      `• Оферта: ${submission.offerAccepted ? "да" : "нет"} (${escapeHtml(submission.offerVersion || "—")})`,
-      `• Политика ПД: ${submission.privacyAccepted ? "да" : "нет"} (${escapeHtml(submission.privacyPolicyVersion || "—")})`,
-      `• Регулярное списание: ${submission.recurringAccepted ? "да" : "нет"}`,
-      `• Отмена подписки: ${submission.cancellationTermsAccepted ? "да" : "нет"} (${escapeHtml(submission.subscriptionTermsVersion || "—")})`,
-      "",
-      `<b>Клиент (UTC):</b> <code>${escapeHtml(submission.consentClientTimestamp || "—")}</code>`,
-      `<b>Сервер (UTC):</b> <code>${escapeHtml(submission.consentServerTimestamp)}</code>`,
-      `<b>IP:</b> <code>${escapeHtml(submission.userIp || "—")}</code>`,
-      `<b>User-Agent:</b> <code>${escapeHtml(submission.userAgent || "—")}</code>`,
-    ].join("\n");
-
-    const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const tgRes = await fetch(tgUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      }),
     });
 
-    if (!tgRes.ok) {
-      const errText = await tgRes.text().catch(() => "");
-      console.error("[apply] telegram error:", tgRes.status, errText);
-      return res
-        .status(502)
-        .json({ ok: false, error: "Не удалось отправить заявку. Попробуйте ещё раз." });
-    }
-
-    return res.json({ ok: true, forwarded: true });
+    return res.json({
+      ok: true,
+      applicationId,
+      status: "created",
+      forwarded,
+    });
   } catch (err) {
-    console.error("[apply] internal error:", err);
+    console.error("[apply] internal error:", err.message);
     return res.status(500).json({ ok: false, error: "Внутренняя ошибка." });
   }
 });
 
 // ---- Liveness probe ----
-app.get("/healthz", (_req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get("/healthz", async (_req, res) => {
+  const dbOk = await checkDb();
+  if (!dbOk) {
+    return res.status(503).json({ ok: false, db: "error" });
+  }
+  return res.json({ ok: true, db: "ok" });
+});
 
 // ---- 404 fallback (SPA-friendly: send index.html for non-API routes) ----
 app.use((req, res, next) => {
@@ -280,9 +450,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  const dbStatus = isDbConfigured()
+    ? (await checkDb()) ? "connected" : "unreachable"
+    : "NOT configured";
   console.log(
-    `charity-fund listening on :${PORT} (telegram: ${
+    `charity-fund listening on :${PORT} (db: ${dbStatus}, telegram: ${
       TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "configured" : "NOT configured"
     })`
   );

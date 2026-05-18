@@ -2,7 +2,8 @@
    Domain — slots data & form logic
    ============================================================= */
 
-const slots = [
+/** Fallback when GET /api/slots is unavailable (offline dev, DB down). */
+const FALLBACK_SLOTS = [
   { id: "s01", title: "Поддержка семьи",                       total: 190000, funded: 0, participant: "" },
   { id: "s02", title: "Краска для стен",                       total: 42000,  funded: 0, participant: "" },
   { id: "s03", title: "Камазы земли для территории",           total: 21000,  funded: 0, participant: "" },
@@ -18,6 +19,33 @@ const slots = [
   { id: "s13", title: "Складные стулья для актового зала",     total: 32000,  funded: 0, participant: "" },
   { id: "s14", title: "Посудомоечная машина",                  total: 45000,  funded: 0, participant: "" }
 ];
+
+const slots = FALLBACK_SLOTS.map((s) => ({ ...s }));
+
+function mapApiSlot(apiSlot) {
+  return {
+    id: apiSlot.id,
+    title: apiSlot.title,
+    total: apiSlot.goal,
+    funded: apiSlot.funded,
+    participant: "",
+  };
+}
+
+async function loadSlots() {
+  try {
+    const response = await fetch("/api/slots", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("slots api unavailable");
+    const data = await response.json();
+    if (!Array.isArray(data) || data.length === 0) throw new Error("empty slots");
+    slots.length = 0;
+    data.forEach((item) => slots.push(mapApiSlot(item)));
+  } catch {
+    slots.length = 0;
+    FALLBACK_SLOTS.forEach((item) => slots.push({ ...item }));
+  }
+  renderSlots();
+}
 
 const slotsGrid = document.getElementById("slotsGrid");
 const slotSelect = document.getElementById("slotSelect");
@@ -285,10 +313,7 @@ supportForm.addEventListener("submit", async (event) => {
       throw new Error(data.error || "Не удалось отправить заявку. Попробуйте ещё раз.");
     }
 
-    // Локальный визуальный прогресс — цифра «Собрано» и полоска подрастают.
-    // Имя участника специально не показываем (см. renderSlots).
-    slot.funded += paymentAmount;
-    renderSlots();
+    await loadSlots();
 
     const pledgeType = frequency === "monthly" ? "ежемесячное" : "разовое";
     setFormSuccess(
@@ -443,6 +468,6 @@ if ("IntersectionObserver" in window) {
    Init
    ============================================================= */
 
-renderSlots();
+loadSlots();
 syncCustomAmountVisibility();
 syncRecurringConsentVisibility();

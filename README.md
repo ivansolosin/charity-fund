@@ -11,30 +11,9 @@
 - **Гибкость взноса** — полностью или частично, разово или ежемесячно.
 - **Подтверждение** — фотоотчёт и отчёт о реализации по мере исполнения слота.
 
-## Текущий список слотов
-
-| Слот | Сумма |
-|------|------:|
-| Поддержка семьи | 190 000 ₽ |
-| Деревья | 150 000 ₽ |
-| Расстоечный шкаф для хлеба | 55 000 ₽ |
-| Гардероб | 50 000 ₽ |
-| Посудомоечная машина | 45 000 ₽ |
-| Краска для стен | 42 000 ₽ |
-| Складные стулья для актового зала | 32 000 ₽ |
-| Книги в библиотеку | 30 000 ₽ |
-| Камазы земли для территории | 21 000 ₽ |
-| Барабанная установка | 21 000 ₽ |
-| Театральный занавес | 20 000 ₽ |
-| Баскетбольное кольцо | 7 100 ₽ |
-| Прожекторы для театра | 4 700 ₽ |
-| Шуруповёрт | 4 100 ₽ |
-
-**Итого:** 671 900 ₽ на 14 активных слотах.
-
 ## Стек
 
-- **Backend** — Node.js 20 + Express, единый контейнер, раздаёт статику и API.
+- **Backend** — Node.js 20 + Express, PostgreSQL (`pg`), единый контейнер.
 - **Frontend** — Vanilla HTML/CSS/JS, без сборки и фреймворков.
 - **CSS3** — design tokens, `:has()`, `clamp()`, `IntersectionObserver`-driven reveal.
 - **Шрифты** — **Inter** (UI) и **Cormorant Garamond** (display) из Google Fonts.
@@ -43,118 +22,183 @@
 
 ```
 .
-├── public/             # Статика
+├── public/                 # Статика
 │   ├── index.html
 │   ├── styles.css
 │   └── script.js
-├── server.js           # Express: статика + POST /api/apply → Telegram
+├── migrations/
+│   └── 001_init.sql        # Схема БД
+├── scripts/
+│   ├── migrate.js          # Применение миграций
+│   └── seed-slots.js       # Наполнение слотов
+├── db.js                   # Пул PostgreSQL
+├── server.js               # Express API + статика
 ├── package.json
-├── Dockerfile          # node:20-alpine
-├── .dockerignore
+├── Dockerfile
+├── .env.example
 └── README.md
 ```
 
-## Приём заявок
+## PostgreSQL на Railway
 
-Форма «Помочь фонду» шлёт `POST /api/apply` на бэкенд с полями:
-`slot`, `slotTitle`, `participantName`, `email`, `amount`, `frequency`.
+1. В проекте Railway нажмите **+ New** → **Database** → **PostgreSQL**.
+2. Откройте сервис PostgreSQL → вкладка **Variables** или **Connect** — скопируйте `DATABASE_URL` (или соберите из `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGPORT`).
+3. Откройте сервис приложения (Node) → **Variables** → добавьте:
+   - `DATABASE_URL` — вставьте URL из шага 2 (можно через **Add Reference** к PostgreSQL-сервису).
+   - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — по желанию, для уведомлений координатору.
+4. После деплоя один раз выполните миграции и seed (локально с тем же `DATABASE_URL` или через Railway CLI / одноразовую команду):
 
-Сервер валидирует, ограничивает по rate-limit (10 заявок в минуту с одного IP) и **пересылает заявку в Telegram** координатору фонда. Хранилища нет — Telegram-чат и есть журнал заявок.
+```bash
+npm install
+npm run migrate
+npm run seed:slots
+```
+
+Railway пересоберёт приложение при изменении переменных. Миграции в production обычно запускают вручную при первом подключении БД или из CI.
 
 ### Переменные окружения
 
-| Переменная | Описание |
-|---|---|
-| `PORT` | Порт сервера (Railway инжектит автоматически) |
-| `TELEGRAM_BOT_TOKEN` | Токен бота из [@BotFather](https://t.me/BotFather) |
-| `TELEGRAM_CHAT_ID` | ID чата, куда уходят заявки (личный чат с ботом или приватная группа с ботом) |
+| Переменная | Обязательна | Описание |
+|---|---|---|
+| `PORT` | нет | Порт сервера (Railway подставляет сам) |
+| `DATABASE_URL` | **да** | Строка подключения PostgreSQL |
+| `TELEGRAM_BOT_TOKEN` | нет | Токен бота [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_CHAT_ID` | нет | ID чата для уведомлений о заявках |
+| `PGSSLMODE` | нет | `disable` — отключить SSL (только локально) |
 
-Если переменные не заданы — сервер всё равно работает, заявки логируются в stdout.
+Скопируйте `.env.example` в `.env` для локальной разработки:
 
-### Как настроить Telegram (5 минут)
-
-1. Открыть [@BotFather](https://t.me/BotFather) → `/newbot` → имя и username бота → получить **TOKEN**.
-2. Открыть только что созданного бота, нажать **Start** (важно: иначе бот не сможет писать вам).
-3. Узнать свой `chat_id`: открыть в браузере  
-   `https://api.telegram.org/bot<TOKEN>/getUpdates` —  
-   найти в JSON `"chat":{"id":123456789, ...}`.
-4. (Опция) Завести приватную группу для координаторов, добавить бота, использовать `chat_id` группы.
-5. В Railway → Service → **Variables** добавить `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID` → Railway сам передеплоит.
+```bash
+cp .env.example .env
+# отредактируйте DATABASE_URL
+```
 
 ## Запуск локально
 
 ```bash
 npm install
+npm run migrate      # создать таблицы
+npm run seed:slots   # загрузить 14 слотов
 npm start
 # открыть http://localhost:3000
 ```
 
-Без Telegram-переменных форма работает, заявки печатаются в консоль.
-
-С Telegram:
+С Telegram-уведомлениями:
 
 ```bash
 TELEGRAM_BOT_TOKEN=xxx TELEGRAM_CHAT_ID=yyy npm start
 ```
 
+Локальный PostgreSQL (Docker):
+
+```bash
+docker run --name charity-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=charity -p 5432:5432 -d postgres:16-alpine
+export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/charity
+npm run migrate && npm run seed:slots && npm start
+```
+
+## API
+
+### `GET /api/slots`
+
+Активные слоты с прогрессом. `funded` = `initial_funded_amount` + сумма заявок в статусах `created`, `pending_payment`, `paid`.
+
+```bash
+curl -s http://localhost:3000/api/slots | jq
+```
+
+### `POST /api/apply`
+
+Сохраняет заявку и согласия в PostgreSQL, затем шлёт уведомление в Telegram (если настроен).
+
+Ответ при успехе:
+
+```json
+{
+  "ok": true,
+  "applicationId": "uuid",
+  "status": "created",
+  "forwarded": true
+}
+```
+
+### `GET /api/applications/:id`
+
+Публичный статус заявки (без IP, user-agent и деталей согласий):
+
+```bash
+curl -s http://localhost:3000/api/applications/<uuid> | jq
+```
+
+### `GET /healthz`
+
+```bash
+curl -s http://localhost:3000/healthz
+# {"ok":true,"db":"ok"}
+```
+
+## Приём заявок
+
+Форма «Помочь фонду» отправляет `POST /api/apply` с полями: `slot`, `slotTitle`, `participantName`, `email`, `phone`, `amount`, `frequency`, флаги согласий и версии документов.
+
+Сервер валидирует данные, сохраняет строки в `applications` и `consents`, ограничивает rate-limit (10 заявок/мин с IP) и **уведомляет координатора в Telegram**. Telegram — только уведомление; источник правды — PostgreSQL.
+
+### Как настроить Telegram (5 минут)
+
+1. [@BotFather](https://t.me/BotFather) → `/newbot` → получить **TOKEN**.
+2. Открыть бота → **Start**.
+3. `https://api.telegram.org/bot<TOKEN>/getUpdates` → найти `"chat":{"id":...}`.
+4. В Railway → Variables: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
+
+Без Telegram заявки всё равно сохраняются в БД; `forwarded: false`.
+
+## Проверка записи в БД
+
+После отправки формы скопируйте `applicationId` из ответа API или из Telegram.
+
+```bash
+# через psql (подставьте свой DATABASE_URL)
+psql "$DATABASE_URL" -c "SELECT id, slot_title, email, amount, status, created_at FROM applications ORDER BY created_at DESC LIMIT 5;"
+psql "$DATABASE_URL" -c "SELECT application_id, offer_accepted, privacy_accepted, offer_version FROM consents ORDER BY created_at DESC LIMIT 5;"
+```
+
+Или HTTP:
+
+```bash
+curl -s "http://localhost:3000/api/applications/<applicationId>"
+```
+
 ## Деплой
 
-Прод-окружение: **Railway** → [charity.up.railway.app](https://charity.up.railway.app).
-Каждый push в `main` автоматически пересобирается и публикуется.
-
-В корне лежит `Dockerfile` на базе `nginx:1.27-alpine`:
-
-- Слушает динамический `$PORT` от Railway (через nginx-шаблон + `envsubst`).
-- Гзип, агрессивный кеш статики (30d, `immutable`), короткий кеш HTML (5 минут — чтобы обновления раскатывались быстро).
-- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`.
-- SPA-fallback: любая 404 ведёт на `index.html`.
-
-### Запустить контейнер локально
+Прод: **Railway** → [charity.up.railway.app](https://charity.up.railway.app). Push в `main` пересобирает контейнер.
 
 ```bash
 docker build -t charity-fund .
-docker run --rm -p 8080:80 charity-fund
-# открыть http://localhost:8080
+docker run --rm -e DATABASE_URL=... -e PORT=3000 -p 3000:3000 charity-fund
 ```
-
-### С кастомным портом (как Railway)
-
-```bash
-docker run --rm -e PORT=3000 -p 3000:3000 charity-fund
-```
-
-## UI / UX
-
-Подача — премиальная, спокойная: тёплая «бумажная» палитра, угольный hero, золотые акценты, антиквенный display-шрифт.
-
-Микро-взаимодействия:
-
-- Aurora-градиент в hero (CSS, без WebGL)
-- Cursor spotlight за курсором
-- Magnetic CTA — кнопки «тянутся» к курсору
-- Scroll-reveal со stagger-анимацией карточек
-- Animated counters в статах героя
-- Spring-чипы быстрых сумм
-- `:has()`-driven сегментированный переключатель «Ежемесячно / Разово»
-
-Полная поддержка `prefers-reduced-motion` — всё стопорится для тех, кому важно.
 
 ## Что уже работает
 
-- Приём заявок через форму с пересылкой координатору в Telegram.
+- PostgreSQL: слоты, заявки, согласия, заготовка таблицы `payments`.
+- `GET /api/slots` — прогресс слотов из БД.
+- `POST /api/apply` — транзакционное сохранение + Telegram.
+- `GET /api/applications/:id` — статус заявки.
+- `GET /healthz` — проверка БД.
+- Frontend загружает слоты из API с fallback на локальный массив.
 
-## Что пока НЕ работает (осознанные ограничения)
+## Что пока НЕ работает
 
-- **Нет персистентного хранилища заявок** — журналом служит Telegram-чат координатора.
-- **Нет реальных платежей** — счёт высылает координатор вручную, после оплаты вручную же отмечает.
-- **Фотоотчёты и отчёты о реализации** — отправляет координатор вручную из CRM фонда.
+- **Реальные платежи** — счёт высылает координатор вручную.
+- **Админка** — нет UI для статусов и экспорта.
+- **Фотоотчёты** — вручную из CRM фонда.
 
 ## Roadmap
 
 - [x] Бэкенд: приём заявок (Express + Telegram)
-- [ ] Персистентное хранилище (SQLite в Railway volume / Supabase / Turso)
-- [ ] Админка с авторизацией: список заявок, статусы, экспорт CSV
-- [ ] Интеграция платёжного шлюза (ЮKassa / CloudPayments) — автоматический счёт после заявки
+- [x] Персистентное хранилище (PostgreSQL на Railway)
+- [ ] Платёжный шлюз (ЮKassa / CloudPayments) + webhooks
+- [ ] После оплаты считать прогресс слота только по `status = paid`
+- [ ] Админка: заявки, статусы, экспорт CSV
 - [ ] Автоматические фотоотчёты и отчёты о реализации
 
 ## Лицензия

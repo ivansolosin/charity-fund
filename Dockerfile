@@ -22,7 +22,8 @@ RUN npm install --omit=dev --no-audit --no-fund \
     && npm cache clean --force
 
 # Copy source
-COPY server.js ./
+COPY server.js db.js ./
+COPY migrations ./migrations
 COPY public ./public
 
 # Run as non-root for safety
