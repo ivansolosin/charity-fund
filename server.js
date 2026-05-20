@@ -10,7 +10,25 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkDb, isDbConfigured, query, withTransaction } from "./db.js";
+
+let checkDb, isDbConfigured, query, withTransaction;
+try {
+  const db = await import("./db.js");
+  checkDb = db.checkDb;
+  isDbConfigured = db.isDbConfigured;
+  query = db.query;
+  withTransaction = db.withTransaction;
+} catch (err) {
+  console.error("[db] module failed to load:", err.message);
+  isDbConfigured = () => false;
+  checkDb = async () => false;
+  query = async () => {
+    throw new Error("Database module unavailable");
+  };
+  withTransaction = async () => {
+    throw new Error("Database module unavailable");
+  };
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -452,9 +470,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.listen(PORT, () => {
+const HOST = process.env.HOST || "0.0.0.0";
+
+app.listen(PORT, HOST, () => {
   console.log(
-    `charity-fund listening on :${PORT} (db: ${
+    `charity-fund listening on ${HOST}:${PORT} (db: ${
       isDbConfigured() ? "configured" : "NOT configured"
     }, telegram: ${
       TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "configured" : "NOT configured"

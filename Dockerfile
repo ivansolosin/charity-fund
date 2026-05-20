@@ -17,7 +17,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Install dependencies first for better layer caching
-COPY package.json ./
+COPY package.json package-lock.json* ./
 RUN npm install --omit=dev --no-audit --no-fund \
     && npm cache clean --force
 
@@ -25,6 +25,8 @@ RUN npm install --omit=dev --no-audit --no-fund \
 COPY server.js db.js ./
 COPY migrations ./migrations
 COPY public ./public
+
+RUN chown -R node:node /app
 
 # Run as non-root for safety
 USER node
