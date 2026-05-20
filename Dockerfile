@@ -22,7 +22,8 @@ RUN npm install --omit=dev --no-audit --no-fund \
     && npm cache clean --force
 
 # Copy source
-COPY server.js db.js ./
+COPY server.js db.js db-setup.js ./
+COPY data ./data
 COPY migrations ./migrations
 COPY public ./public
 

@@ -30,6 +30,14 @@ try {
   };
 }
 
+let ensureDbReady = async () => {};
+try {
+  const setup = await import("./db-setup.js");
+  ensureDbReady = () => setup.ensureDbReady(query, isDbConfigured);
+} catch (err) {
+  console.error("[db] setup module failed to load:", err.message);
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
@@ -417,7 +425,7 @@ app.post("/api/apply", rateLimit, requireDb, async (req, res) => {
         return appId;
       });
     } catch (err) {
-      console.error("[apply] db save failed:", err.message, err.code || "");
+      console.error("[apply] db save failed:", err.code || "", err.message);
       return res.status(500).json({ ok: false, error: "Не удалось сохранить заявку. Попробуйте ещё раз." });
     }
 
@@ -477,6 +485,14 @@ app.use((req, res, next) => {
 });
 
 const HOST = process.env.HOST || "0.0.0.0";
+
+if (isDbConfigured()) {
+  try {
+    await ensureDbReady();
+  } catch (err) {
+    console.error("[db] ensureDbReady failed:", err.message);
+  }
+}
 
 app.listen(PORT, HOST, () => {
   console.log(
