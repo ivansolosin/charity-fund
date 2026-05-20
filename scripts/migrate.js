@@ -17,6 +17,10 @@ if (!DATABASE_URL) {
 
 const migrationPath = path.join(__dirname, "..", "migrations", "001_init.sql");
 const sql = fs.readFileSync(migrationPath, "utf8");
+const statements = sql
+  .split(";")
+  .map((s) => s.replace(/--[^\n]*/g, "").trim())
+  .filter(Boolean);
 
 const client = new pg.Client({
   connectionString: DATABASE_URL,
@@ -31,8 +35,10 @@ const client = new pg.Client({
 try {
   await client.connect();
   console.log("migrate: connected to PostgreSQL");
-  await client.query(sql);
-  console.log("migrate: applied migrations/001_init.sql successfully");
+  for (const statement of statements) {
+    await client.query(statement);
+  }
+  console.log(`migrate: applied ${statements.length} statements from 001_init.sql`);
 } catch (err) {
   console.error("migrate: failed —", err.message);
   process.exit(1);

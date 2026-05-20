@@ -1,6 +1,4 @@
--- charity-fund — initial schema
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
+-- charity-fund — initial schema (PostgreSQL 13+: gen_random_uuid() is built-in)
 CREATE TABLE IF NOT EXISTS support_slots (
   id text PRIMARY KEY,
   title text NOT NULL,

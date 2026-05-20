@@ -9,20 +9,35 @@ import { DEFAULT_SLOTS, SLOT_UPSERT_SQL } from "./data/default-slots.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+function splitSqlStatements(sql) {
+  return sql
+    .split(";")
+    .map((s) => s.replace(/--[^\n]*/g, "").trim())
+    .filter(Boolean);
+}
+
+async function runMigrationFile(query) {
+  const sql = fs.readFileSync(path.join(__dirname, "migrations", "001_init.sql"), "utf8");
+  const statements = splitSqlStatements(sql);
+  for (const statement of statements) {
+    await query(statement);
+  }
+}
+
 export async function ensureDbReady(query, isDbConfigured) {
   if (!isDbConfigured()) return;
 
   const { rows } = await query(
-    `SELECT EXISTS (
-       SELECT FROM information_schema.tables
-       WHERE table_schema = 'public' AND table_name = 'applications'
-     ) AS ready`
+    `SELECT to_regclass('public.applications') AS applications,
+            to_regclass('public.support_slots') AS support_slots`
   );
 
-  if (!rows[0].ready) {
-    const sql = fs.readFileSync(path.join(__dirname, "migrations", "001_init.sql"), "utf8");
-    await query(sql);
-    console.log("[db] schema created (migrations/001_init.sql)");
+  const hasApplications = rows[0].applications !== null;
+  const hasSlots = rows[0].support_slots !== null;
+
+  if (!hasApplications || !hasSlots) {
+    await runMigrationFile(query);
+    console.log("[db] schema ensured (migrations/001_init.sql)");
   }
 
   const { rows: countRows } = await query("SELECT COUNT(*)::int AS n FROM support_slots");

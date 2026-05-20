@@ -470,10 +470,25 @@ app.post("/api/apply", rateLimit, requireDb, async (req, res) => {
 app.get("/healthz", async (_req, res) => {
   const telegram = telegramStatus();
   if (!isDbConfigured()) {
-    return res.json({ ok: true, db: "not_configured", telegram });
+    return res.json({ ok: true, db: "not_configured", schema: "n/a", telegram });
   }
   const dbOk = await checkDb();
-  return res.json({ ok: true, db: dbOk ? "ok" : "error", telegram });
+  let schema = "unknown";
+  if (dbOk) {
+    try {
+      const { rows } = await query(`SELECT to_regclass('public.support_slots') AS slots`);
+      if (!rows[0].slots) {
+        schema = "missing_tables";
+      } else {
+        const { rows: countRows } = await query("SELECT COUNT(*)::int AS n FROM support_slots");
+        schema = `ready:${countRows[0].n}`;
+      }
+    } catch (err) {
+      schema = "error";
+      console.error("[healthz] schema check:", err.message);
+    }
+  }
+  return res.json({ ok: true, db: dbOk ? "ok" : "error", schema, telegram });
 });
 
 // ---- 404 fallback (SPA-friendly: send index.html for non-API routes) ----
