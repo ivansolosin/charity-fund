@@ -186,12 +186,16 @@ app.get("/api/applications/:id", requireDb, async (req, res) => {
   }
 });
 
+function telegramStatus() {
+  return TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "configured" : "not_configured";
+}
+
 async function sendTelegramNotification(submission) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.warn(
       "[apply] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set — notification skipped."
     );
-    return false;
+    return { forwarded: false, reason: "telegram_not_configured" };
   }
 
   const freq = submission.frequency;
@@ -238,10 +242,10 @@ async function sendTelegramNotification(submission) {
   if (!tgRes.ok) {
     const errText = await tgRes.text().catch(() => "");
     console.error("[apply] telegram error:", tgRes.status, errText.slice(0, 200));
-    return false;
+    return { forwarded: false, reason: "telegram_api_error" };
   }
 
-  return true;
+  return { forwarded: true };
 }
 
 // ---- POST /api/apply ----
@@ -417,7 +421,7 @@ app.post("/api/apply", rateLimit, requireDb, async (req, res) => {
       return res.status(500).json({ ok: false, error: "Не удалось сохранить заявку. Попробуйте ещё раз." });
     }
 
-    const forwarded = await sendTelegramNotification({
+    const notify = await sendTelegramNotification({
       applicationId,
       status: "created",
       slotTitle: slotTitle.trim(),
@@ -443,7 +447,8 @@ app.post("/api/apply", rateLimit, requireDb, async (req, res) => {
       ok: true,
       applicationId,
       status: "created",
-      forwarded,
+      forwarded: notify.forwarded,
+      ...(notify.reason && { notifyReason: notify.reason }),
     });
   } catch (err) {
     console.error("[apply] internal error:", err.message);
@@ -455,11 +460,12 @@ app.post("/api/apply", rateLimit, requireDb, async (req, res) => {
 // Always HTTP 200 so Railway/load balancers keep the service up.
 // DB status is informational; a down DB must not take the static site offline.
 app.get("/healthz", async (_req, res) => {
+  const telegram = telegramStatus();
   if (!isDbConfigured()) {
-    return res.json({ ok: true, db: "not_configured" });
+    return res.json({ ok: true, db: "not_configured", telegram });
   }
   const dbOk = await checkDb();
-  return res.json({ ok: true, db: dbOk ? "ok" : "error" });
+  return res.json({ ok: true, db: dbOk ? "ok" : "error", telegram });
 });
 
 // ---- 404 fallback (SPA-friendly: send index.html for non-API routes) ----

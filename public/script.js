@@ -316,9 +316,12 @@ supportForm.addEventListener("submit", async (event) => {
     await loadSlots();
 
     const pledgeType = frequency === "monthly" ? "ежемесячное" : "разовое";
-    setFormSuccess(
-      `Принято ${pledgeType} пожертвование на ${rub(paymentAmount)}. Вам на email будет отправлен счёт на оплату. Позже вам будет предоставлен отчёт по реализации слота. Спасибо!`
-    );
+    let successText = `Принято ${pledgeType} пожертвование на ${rub(paymentAmount)}. Вам на email будет отправлен счёт на оплату. Позже вам будет предоставлен отчёт по реализации слота. Спасибо!`;
+    if (data.forwarded === false) {
+      successText +=
+        " Заявка сохранена; уведомление координатору в Telegram не отправлено — мы свяжемся с вами по email.";
+    }
+    setFormSuccess(successText);
 
     supportForm.reset();
     document.querySelector('input[name="amountPreset"][value="500"]').checked = true;
