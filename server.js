@@ -434,12 +434,14 @@ app.post("/api/apply", rateLimit, requireDb, async (req, res) => {
 });
 
 // ---- Liveness probe ----
+// Always HTTP 200 so Railway/load balancers keep the service up.
+// DB status is informational; a down DB must not take the static site offline.
 app.get("/healthz", async (_req, res) => {
-  const dbOk = await checkDb();
-  if (!dbOk) {
-    return res.status(503).json({ ok: false, db: "error" });
+  if (!isDbConfigured()) {
+    return res.json({ ok: true, db: "not_configured" });
   }
-  return res.json({ ok: true, db: "ok" });
+  const dbOk = await checkDb();
+  return res.json({ ok: true, db: dbOk ? "ok" : "error" });
 });
 
 // ---- 404 fallback (SPA-friendly: send index.html for non-API routes) ----
@@ -450,13 +452,17 @@ app.use((req, res, next) => {
   next();
 });
 
-app.listen(PORT, async () => {
-  const dbStatus = isDbConfigured()
-    ? (await checkDb()) ? "connected" : "unreachable"
-    : "NOT configured";
+app.listen(PORT, () => {
   console.log(
-    `charity-fund listening on :${PORT} (db: ${dbStatus}, telegram: ${
+    `charity-fund listening on :${PORT} (db: ${
+      isDbConfigured() ? "configured" : "NOT configured"
+    }, telegram: ${
       TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID ? "configured" : "NOT configured"
     })`
   );
+  if (isDbConfigured()) {
+    checkDb().then((ok) => {
+      console.log(`[db] startup check: ${ok ? "connected" : "unreachable"}`);
+    });
+  }
 });

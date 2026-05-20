@@ -13,17 +13,19 @@ function getPool() {
     throw new Error("DATABASE_URL is not configured");
   }
   if (!pool) {
+    const url = process.env.DATABASE_URL;
+    const useSsl =
+      process.env.PGSSLMODE !== "disable" &&
+      (process.env.PGSSLMODE === "require" ||
+        url.includes("sslmode=require") ||
+        url.includes("railway.app") ||
+        url.includes("proxy.rlwy.net"));
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: url,
       max: 10,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
-      ssl:
-        process.env.PGSSLMODE === "disable"
-          ? false
-          : process.env.NODE_ENV === "production"
-            ? { rejectUnauthorized: false }
-            : undefined,
+      ssl: useSsl ? { rejectUnauthorized: false } : false,
     });
 
     pool.on("error", (err) => {
