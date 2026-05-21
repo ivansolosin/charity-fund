@@ -4,7 +4,7 @@
 
 import pg from "pg";
 import { pgClientOptions } from "../pg-config.js";
-import { DEFAULT_SLOTS, SLOT_UPSERT_SQL } from "../data/default-slots.js";
+import { DEFAULT_SLOTS, SLOT_UPSERT_SQL } from "../seed-data/default-slots.js";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
