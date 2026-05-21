@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { pgClientOptions } from "../pg-config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -22,15 +23,7 @@ const statements = sql
   .map((s) => s.replace(/--[^\n]*/g, "").trim())
   .filter(Boolean);
 
-const client = new pg.Client({
-  connectionString: DATABASE_URL,
-  ssl:
-    process.env.PGSSLMODE === "disable"
-      ? false
-      : process.env.NODE_ENV === "production"
-        ? { rejectUnauthorized: false }
-        : undefined,
-});
+const client = new pg.Client(pgClientOptions());
 
 try {
   await client.connect();

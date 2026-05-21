@@ -22,9 +22,10 @@ RUN npm install --omit=dev --no-audit --no-fund \
     && npm cache clean --force
 
 # Copy source
-COPY server.js db.js db-setup.js ./
+COPY server.js db.js db-setup.js pg-config.js ./
 COPY data ./data
 COPY migrations ./migrations
+COPY scripts ./scripts
 COPY public ./public
 
 RUN chown -R node:node /app
@@ -34,4 +35,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "node scripts/migrate.js && node scripts/seed-slots.js && node server.js"]

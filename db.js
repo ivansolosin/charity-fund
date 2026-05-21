@@ -3,6 +3,7 @@
 // =============================================================
 
 import pg from "pg";
+import { pgSslOption } from "./pg-config.js";
 
 const { Pool } = pg;
 
@@ -13,19 +14,12 @@ function getPool() {
     throw new Error("DATABASE_URL is not configured");
   }
   if (!pool) {
-    const url = process.env.DATABASE_URL;
-    const useSsl =
-      process.env.PGSSLMODE !== "disable" &&
-      (process.env.PGSSLMODE === "require" ||
-        url.includes("sslmode=require") ||
-        url.includes("railway.app") ||
-        url.includes("proxy.rlwy.net"));
     pool = new Pool({
-      connectionString: url,
+      connectionString: process.env.DATABASE_URL,
       max: 10,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
-      ssl: useSsl ? { rejectUnauthorized: false } : false,
+      ssl: pgSslOption(),
     });
 
     pool.on("error", (err) => {

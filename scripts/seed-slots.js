@@ -3,6 +3,7 @@
 // =============================================================
 
 import pg from "pg";
+import { pgClientOptions } from "../pg-config.js";
 import { DEFAULT_SLOTS, SLOT_UPSERT_SQL } from "../data/default-slots.js";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -12,15 +13,7 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const client = new pg.Client({
-  connectionString: DATABASE_URL,
-  ssl:
-    process.env.PGSSLMODE === "disable"
-      ? false
-      : process.env.NODE_ENV === "production"
-        ? { rejectUnauthorized: false }
-        : undefined,
-});
+const client = new pg.Client(pgClientOptions());
 
 try {
   await client.connect();
