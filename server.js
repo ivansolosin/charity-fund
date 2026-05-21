@@ -33,9 +33,36 @@ try {
 let ensureDbReady = async () => {};
 try {
   const setup = await import("./db-setup.js");
-  ensureDbReady = () => setup.ensureDbReady(query, isDbConfigured);
+  ensureDbReady = async () => setup.ensureDbReady(query, isDbConfigured);
 } catch (err) {
   console.error("[db] setup module failed to load:", err.message);
+}
+
+let lastDbInitError = null;
+let dbInitPromise = null;
+
+async function initDbOnce() {
+  if (!isDbConfigured()) return;
+  if (!dbInitPromise) {
+    dbInitPromise = ensureDbReady().catch((err) => {
+      lastDbInitError = err.message;
+      dbInitPromise = null;
+      throw err;
+    });
+  }
+  return dbInitPromise;
+}
+
+async function getSchemaStatus() {
+  if (!isDbConfigured()) return "n/a";
+  try {
+    const { rows } = await query(`SELECT to_regclass('public.support_slots') AS slots`);
+    if (!rows[0].slots) return "missing_tables";
+    const { rows: countRows } = await query("SELECT COUNT(*)::int AS n FROM support_slots");
+    return `ready:${countRows[0].n}`;
+  } catch (err) {
+    return `error:${err.message}`;
+  }
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -89,7 +116,12 @@ function requireDb(_req, res, next) {
   if (!isDbConfigured()) {
     return res.status(503).json({ ok: false, error: "База данных не настроена." });
   }
-  next();
+  initDbOnce()
+    .then(() => next())
+    .catch((err) => {
+      console.error("[db] init failed:", err.message);
+      res.status(503).json({ ok: false, error: "База данных не готова. Попробуйте через минуту." });
+    });
 }
 
 // ---- Naive in-memory rate limit (per IP, sliding 1 min window) ----
@@ -475,20 +507,25 @@ app.get("/healthz", async (_req, res) => {
   const dbOk = await checkDb();
   let schema = "unknown";
   if (dbOk) {
-    try {
-      const { rows } = await query(`SELECT to_regclass('public.support_slots') AS slots`);
-      if (!rows[0].slots) {
-        schema = "missing_tables";
-      } else {
-        const { rows: countRows } = await query("SELECT COUNT(*)::int AS n FROM support_slots");
-        schema = `ready:${countRows[0].n}`;
+    schema = await getSchemaStatus();
+    if (schema === "missing_tables") {
+      try {
+        await initDbOnce();
+        schema = await getSchemaStatus();
+        lastDbInitError = null;
+      } catch (err) {
+        lastDbInitError = err.message;
+        schema = `init_failed:${err.message}`;
       }
-    } catch (err) {
-      schema = "error";
-      console.error("[healthz] schema check:", err.message);
     }
   }
-  return res.json({ ok: true, db: dbOk ? "ok" : "error", schema, telegram });
+  return res.json({
+    ok: true,
+    db: dbOk ? "ok" : "error",
+    schema,
+    telegram,
+    ...(lastDbInitError && { dbInitError: lastDbInitError }),
+  });
 });
 
 // ---- 404 fallback (SPA-friendly: send index.html for non-API routes) ----
@@ -502,11 +539,9 @@ app.use((req, res, next) => {
 const HOST = process.env.HOST || "0.0.0.0";
 
 if (isDbConfigured()) {
-  try {
-    await ensureDbReady();
-  } catch (err) {
-    console.error("[db] ensureDbReady failed:", err.message);
-  }
+  initDbOnce().catch((err) => {
+    console.error("[db] startup init failed:", err.message);
+  });
 }
 
 app.listen(PORT, HOST, () => {

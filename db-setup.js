@@ -20,7 +20,13 @@ async function runMigrationFile(query) {
   const sql = fs.readFileSync(path.join(__dirname, "migrations", "001_init.sql"), "utf8");
   const statements = splitSqlStatements(sql);
   for (const statement of statements) {
-    await query(statement);
+    try {
+      await query(statement);
+    } catch (err) {
+      console.error("[db] migration statement failed:", err.message);
+      console.error("[db] statement:", statement.slice(0, 120));
+      throw err;
+    }
   }
 }
 
