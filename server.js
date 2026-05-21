@@ -5,11 +5,14 @@
 // - POST /api/apply — applications + consents → PostgreSQL, Telegram notify
 // - GET  /api/applications/:id — public application status
 // - GET  /healthz   — liveness + DB probe
+// - GET  /api/cms/* — Strapi v5 proxy (when STRAPI_URL is set)
+// - GET  /api/config.js — browser Strapi base URL
 // =============================================================
 
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mountStrapiProxy } from "./server/strapi-proxy.js";
 
 let checkDb, isDbConfigured, query, withTransaction;
 try {
@@ -78,6 +81,9 @@ const UUID_RE =
 app.disable("x-powered-by");
 app.set("trust proxy", true);
 app.use(express.json({ limit: "10kb" }));
+
+// ---- Strapi CMS proxy (before static) ----
+mountStrapiProxy(app);
 
 // ---- Static site ----
 app.use(

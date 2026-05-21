@@ -35,38 +35,39 @@
       </div>
     </nav>
 
+    <div data-cms="homepage">
     <header class="hero" data-spotlight>
       <div class="hero-aurora" aria-hidden="true"></div>
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="container hero-inner">
         <p class="badge" data-reveal>
           <span class="badge-dot" aria-hidden="true"></span>
-          Гуманная педагогика · Прозрачная помощь
+          <span data-cms-field="badge">Гуманная педагогика · Прозрачная помощь</span>
         </p>
-        <p class="hero-script" data-reveal data-reveal-delay="40">с любовью к каждому ребёнку</p>
-        <h1 data-reveal data-reveal-delay="60">
+        <p class="hero-script" data-reveal data-reveal-delay="40" data-cms-field="heroScript">с любовью к каждому ребёнку</p>
+        <h1 data-reveal data-reveal-delay="60" data-cms-field="heroTitle">
           Помогаем «Живой школе&nbsp;Клевер» расти <em>вместе</em>.
         </h1>
-        <p class="lead" data-reveal data-reveal-delay="120">
+        <p class="lead" data-reveal data-reveal-delay="120" data-cms-field="heroLead">
           Выбираете слот поддержки школы, получаете счёт на email и оплачиваете полностью или удобной частью. По мере реализации присылаем фотоотчёт и отчёт о работе — всё открыто и по-человечески.
         </p>
         <div class="hero-actions" data-reveal data-reveal-delay="180">
           <a href="#slots" class="cta" data-magnetic>
-            <span>Выбрать слот</span>
+            <span data-cms-field="heroCtaPrimary">Выбрать слот</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </a>
-          <a href="#how" class="cta cta-secondary">Как это работает</a>
+          <a href="#how" class="cta cta-secondary" data-cms-field="heroCtaSecondary">Как это работает</a>
         </div>
       </div>
     </header>
 
     <main class="container">
       <section id="how" class="section">
-        <p class="eyebrow" data-reveal>Принцип</p>
-        <h2 data-reveal data-reveal-delay="60">Как это работает</h2>
-        <p class="section-text" data-reveal data-reveal-delay="120">
+        <p class="eyebrow" data-reveal data-cms-field="howEyebrow">Принцип</p>
+        <h2 data-reveal data-reveal-delay="60" data-cms-field="howTitle">Как это работает</h2>
+        <p class="section-text" data-reveal data-reveal-delay="120" data-cms-field="howText">
           Три простых шага — от выбора слота до отчёта о реализации.
         </p>
         <div class="steps-grid" data-reveal-stagger>
@@ -89,18 +90,18 @@
       </section>
 
       <section id="slots" class="section">
-        <p class="eyebrow" data-reveal>Слоты</p>
-        <h2 data-reveal data-reveal-delay="60">Доступные слоты поддержки</h2>
-        <p class="section-text" data-reveal data-reveal-delay="120">
+        <p class="eyebrow" data-reveal data-cms-field="slotsEyebrow">Слоты</p>
+        <h2 data-reveal data-reveal-delay="60" data-cms-field="slotsTitle">Доступные слоты поддержки</h2>
+        <p class="section-text" data-reveal data-reveal-delay="120" data-cms-field="slotsText">
           Каждый слот можно закрыть целиком или внести любую часть суммы.
         </p>
         <div id="slotsGrid" class="slots-grid" data-reveal-stagger></div>
       </section>
 
       <section id="support" class="section form-section">
-        <p class="eyebrow" data-reveal>Поддержка</p>
-        <h2 data-reveal data-reveal-delay="60">Помочь школе</h2>
-        <p class="section-text" data-reveal data-reveal-delay="120">
+        <p class="eyebrow" data-reveal data-cms-field="supportEyebrow">Поддержка</p>
+        <h2 data-reveal data-reveal-delay="60" data-cms-field="supportTitle">Помочь школе</h2>
+        <p class="section-text" data-reveal data-reveal-delay="120" data-cms-field="supportText">
           Выберите сумму и частоту пожертвования — это закроет часть выбранного слота поддержки школы.
         </p>
         <form id="supportForm" class="support-form" data-reveal data-reveal-delay="180">
@@ -153,7 +154,7 @@
             <span class="segmented-thumb" aria-hidden="true"></span>
           </div>
 
-          <p class="frequency-note">
+          <p class="frequency-note" data-cms-field="frequencyNote">
             Ежемесячная подписка даже на самую небольшую, но комфортную для вас сумму улучшает работу Фонда и помогает проектам.
           </p>
 
@@ -268,9 +269,9 @@
       <div class="container">
         <div class="footer-brand">
           <img src="/logo.png" alt="Живая школа «Клевер»" class="footer-logo" width="160" height="147" />
-          <p class="footer-script">с любовью и заботой</p>
+          <p class="footer-script" data-cms-field="footerScript">с любовью и заботой</p>
         </div>
-        <p>Спасибо, что помогаете нашим детям расти в живой, человечной среде. Каждый вклад — кирпичик нашей школы.</p>
+        <p data-cms-field="footerText">Спасибо, что помогаете нашим детям расти в живой, человечной среде. Каждый вклад — кирпичик нашей школы.</p>
         <p class="footer-links">
           <a href="/offer.html">Оферта</a>
           <a href="/privacy.html">Политика обработки персональных данных</a>
@@ -279,6 +280,9 @@
         </p>
       </div>
     </footer>
+    </div>
+    <script src="/api/config.js"></script>
+    <script type="module" src="js/cms-init.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

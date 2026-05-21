@@ -1,0 +1,51 @@
+{
+  "kind": "singleType",
+  "collectionName": "site_settings",
+  "info": {
+    "singularName": "site-setting",
+    "pluralName": "site-settings",
+    "displayName": "Site Settings",
+    "description": "Контакты, реквизиты, presets сумм"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "supportEmail": {
+      "type": "email",
+      "default": "aapple_school@mail.ru"
+    },
+    "legalEntityName": {
+      "type": "string"
+    },
+    "inn": {
+      "type": "string"
+    },
+    "ogrn": {
+      "type": "string"
+    },
+    "address": {
+      "type": "text"
+    },
+    "bankName": {
+      "type": "string"
+    },
+    "bik": {
+      "type": "string"
+    },
+    "corrAccount": {
+      "type": "string"
+    },
+    "accountNumber": {
+      "type": "string"
+    },
+    "amountPresets": {
+      "type": "json",
+      "default": [300, 500, 1000, 3000, 5000]
+    },
+    "legalVersion": {
+      "type": "string",
+      "default": "2026-05-18"
+    }
+  }
+}

@@ -18,10 +18,11 @@
   </head>
   <body>
     <main class="legal">
-      <div class="container legal-doc">
+      <div class="container legal-doc" id="legal-content" data-cms-slug="contacts">
         <a class="legal-back" href="/">← Вернуться на сайт</a>
         <h1>Контакты</h1>
 
+        <div class="legal-body">
         <h2>Поддержка</h2>
         <p>
           Email:
@@ -50,7 +51,10 @@
           <li><a href="/privacy.html">Политика обработки персональных данных</a></li>
           <li><a href="/subscription-cancel.html">Отмена регулярных платежей</a></li>
         </ul>
+        </div>
       </div>
     </main>
+    <script src="/api/config.js"></script>
+    <script type="module" src="js/legal-init.js"></script>
   </body>
 </html>

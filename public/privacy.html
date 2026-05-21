@@ -18,11 +18,12 @@
   </head>
   <body>
     <main class="legal">
-      <div class="container legal-doc">
+      <div class="container legal-doc" id="legal-content" data-cms-slug="privacy">
         <a class="legal-back" href="/">← Вернуться на сайт</a>
         <h1>Политика обработки персональных данных</h1>
         <p class="legal-meta">Версия от 18 мая 2026 года · действует с 18 мая 2026 года</p>
 
+        <div class="legal-body">
         <p>
           Настоящая Политика определяет порядок обработки и защиты персональных данных на сайте
           <a href="https://charity.up.railway.app/">https://charity.up.railway.app/</a>
@@ -138,7 +139,10 @@
           <a href="/contacts.html">Контакты</a> ·
           <a href="/subscription-cancel.html">Отмена регулярных платежей</a>
         </p>
+        </div>
       </div>
     </main>
+    <script src="/api/config.js"></script>
+    <script type="module" src="js/legal-init.js"></script>
   </body>
 </html>
