@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_shared_step_items",
+  "info": {
+    "displayName": "Step Item",
+    "icon": "bulletList",
+    "description": "Шаг в секции «Как это работает»"
+  },
+  "options": {},
+  "attributes": {
+    "number": {
+      "type": "string",
+      "maxLength": 4
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": true
+    }
+  }
+}

@@ -53,14 +53,16 @@ const supportForm = document.getElementById("supportForm");
 const customAmountWrap = document.getElementById("customAmountWrap");
 const customAmountInput = document.getElementById("customAmount");
 const formMessage = document.getElementById("formMessage");
-const amountPresetInputs = document.querySelectorAll('input[name="amountPreset"]');
-const frequencyInputs = document.querySelectorAll('input[name="frequency"]');
 const offerAcceptedCheckbox = document.getElementById("offerAccepted");
 const privacyAcceptedCheckbox = document.getElementById("privacyAccepted");
 const recurringConsentWrap = document.getElementById("recurringConsentWrap");
 const recurringAcceptedCheckbox = document.getElementById("recurringAccepted");
 
-const LEGAL_VERSION = "2026-05-18";
+const LEGAL_VERSION_FALLBACK = "2026-05-18";
+
+function getLegalVersion() {
+  return window.__LEGAL_VERSION__ || LEGAL_VERSION_FALLBACK;
+}
 
 const rub = (value) => `${value.toLocaleString("ru-RU")} ₽`;
 
@@ -68,11 +70,9 @@ function renderSlots() {
   slotsGrid.innerHTML = "";
   slotSelect.innerHTML = "";
 
-  slots.forEach((slot, index) => {
+  slots.forEach((slot) => {
     const card = document.createElement("article");
     card.className = "slot-card";
-    card.dataset.reveal = "";
-    card.style.setProperty("--reveal-delay", `${index * 80}ms`);
     const progress = Math.min(Math.round((slot.funded / slot.total) * 100), 100);
     const remainder = Math.max(slot.total - slot.funded, 0);
 
@@ -94,17 +94,15 @@ function renderSlots() {
     }
     slotSelect.appendChild(option);
   });
-
-  attachReveal(slotsGrid.querySelectorAll("[data-reveal]"));
 }
 
 function getSelectedAmountPreset() {
-  const selected = Array.from(amountPresetInputs).find((item) => item.checked);
+  const selected = document.querySelector('input[name="amountPreset"]:checked');
   return selected ? selected.value : "500";
 }
 
 function getSelectedFrequency() {
-  const selected = Array.from(frequencyInputs).find((item) => item.checked);
+  const selected = document.querySelector('input[name="frequency"]:checked');
   return selected ? selected.value : "monthly";
 }
 
@@ -123,12 +121,9 @@ function syncRecurringConsentVisibility() {
   }
 }
 
-amountPresetInputs.forEach((input) => {
-  input.addEventListener("change", syncCustomAmountVisibility);
-});
-
-frequencyInputs.forEach((input) => {
-  input.addEventListener("change", syncRecurringConsentVisibility);
+supportForm.addEventListener("change", (event) => {
+  if (event.target.name === "amountPreset") syncCustomAmountVisibility();
+  if (event.target.name === "frequency") syncRecurringConsentVisibility();
 });
 
 /* =============================================================
@@ -299,9 +294,9 @@ supportForm.addEventListener("submit", async (event) => {
         privacyAccepted: true,
         recurringAccepted: isMonthly && recurringAcceptedCheckbox.checked,
         cancellationTermsAccepted: isMonthly && recurringAcceptedCheckbox.checked,
-        offerVersion: LEGAL_VERSION,
-        privacyPolicyVersion: LEGAL_VERSION,
-        subscriptionTermsVersion: LEGAL_VERSION,
+        offerVersion: getLegalVersion(),
+        privacyPolicyVersion: getLegalVersion(),
+        subscriptionTermsVersion: getLegalVersion(),
         consentClientTimestamp: new Date().toISOString(),
       }),
     });
@@ -324,7 +319,9 @@ supportForm.addEventListener("submit", async (event) => {
     setFormSuccess(successText);
 
     supportForm.reset();
-    document.querySelector('input[name="amountPreset"][value="500"]').checked = true;
+    const defaultPreset = document.querySelector('input[name="amountPreset"][value="500"]')
+      || document.querySelector('input[name="amountPreset"]');
+    if (defaultPreset) defaultPreset.checked = true;
     document.getElementById("freqMonthly").checked = true;
     syncCustomAmountVisibility();
     syncRecurringConsentVisibility();
@@ -337,48 +334,7 @@ supportForm.addEventListener("submit", async (event) => {
   }
 });
 
-/* =============================================================
-   Motion — scroll-reveal with stagger
-   ============================================================= */
-
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-const revealObserver = "IntersectionObserver" in window
-  ? new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            revealObserver.unobserve(entry.target);
-          }
-        });
-      },
-      { rootMargin: "-8% 0px -8% 0px", threshold: 0.05 }
-    )
-  : null;
-
-function attachReveal(nodes) {
-  if (!revealObserver || prefersReducedMotion) {
-    nodes.forEach((n) => n.classList.add("is-visible"));
-    return;
-  }
-  nodes.forEach((node) => {
-    if (node.dataset.revealDelay) {
-      node.style.setProperty("--reveal-delay", `${node.dataset.revealDelay}ms`);
-    }
-    revealObserver.observe(node);
-  });
-}
-
-// Stagger children inside reveal-stagger groups
-document.querySelectorAll("[data-reveal-stagger]").forEach((group) => {
-  Array.from(group.children).forEach((child, idx) => {
-    if (!child.hasAttribute("data-reveal")) child.dataset.reveal = "";
-    if (!child.dataset.revealDelay) child.dataset.revealDelay = String(idx * 80);
-  });
-});
-
-attachReveal(document.querySelectorAll("[data-reveal]"));
 
 /* =============================================================
    Hero — cursor spotlight
@@ -450,27 +406,13 @@ function animateCounter(el) {
   requestAnimationFrame(tick);
 }
 
-if ("IntersectionObserver" in window) {
-  const counterObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          animateCounter(entry.target);
-          counterObserver.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.4 }
-  );
-  document.querySelectorAll("[data-counter]").forEach((el) => counterObserver.observe(el));
-} else {
-  document.querySelectorAll("[data-counter]").forEach(animateCounter);
-}
+document.querySelectorAll("[data-counter]").forEach(animateCounter);
 
 /* =============================================================
    Init
    ============================================================= */
 
+renderSlots();
 loadSlots();
 syncCustomAmountVisibility();
 syncRecurringConsentVisibility();

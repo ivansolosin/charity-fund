@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Strapi
+.cache/
+build/
+dist/
+.tmp/
+*.db
+*.db-journal
+
+# Environment
+.env
+.env.local
+
+# Uploads (keep folder)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store

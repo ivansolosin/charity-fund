@@ -1,0 +1,92 @@
+{
+  "kind": "singleType",
+  "collectionName": "homepages",
+  "info": {
+    "singularName": "homepage",
+    "pluralName": "homepages",
+    "displayName": "Homepage",
+    "description": "Контент главной страницы"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "badgeText": {
+      "type": "string",
+      "default": "Гуманная педагогика · Прозрачная помощь"
+    },
+    "heroScript": {
+      "type": "string",
+      "default": "с любовью к каждому ребёнку"
+    },
+    "heroTitle": {
+      "type": "text",
+      "default": "Помогаем «Живой школе Клевер» расти вместе."
+    },
+    "heroLead": {
+      "type": "text"
+    },
+    "heroCtaPrimary": {
+      "type": "string",
+      "default": "Выбрать слот"
+    },
+    "heroCtaSecondary": {
+      "type": "string",
+      "default": "Как это работает"
+    },
+    "howEyebrow": {
+      "type": "string",
+      "default": "Принцип"
+    },
+    "howTitle": {
+      "type": "string",
+      "default": "Как это работает"
+    },
+    "howText": {
+      "type": "text"
+    },
+    "steps": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.step-item"
+    },
+    "slotsEyebrow": {
+      "type": "string",
+      "default": "Слоты"
+    },
+    "slotsTitle": {
+      "type": "string",
+      "default": "Доступные слоты поддержки"
+    },
+    "slotsText": {
+      "type": "text"
+    },
+    "supportEyebrow": {
+      "type": "string",
+      "default": "Поддержка"
+    },
+    "supportTitle": {
+      "type": "string",
+      "default": "Помочь школе"
+    },
+    "supportText": {
+      "type": "text"
+    },
+    "frequencyNote": {
+      "type": "text"
+    },
+    "footerScript": {
+      "type": "string",
+      "default": "с любовью и заботой"
+    },
+    "footerText": {
+      "type": "text"
+    },
+    "metaTitle": {
+      "type": "string"
+    },
+    "metaDescription": {
+      "type": "text"
+    }
+  }
+}

@@ -1277,6 +1277,17 @@ input::placeholder {
   100% { transform: translateX(100%); }
 }
 
+/* ---- CMS loading states ---- */
+[data-cms].is-loading {
+  opacity: 0.92;
+  transition: opacity 0.2s ease;
+}
+
+#legal-content.is-loading .legal-body {
+  min-height: 6rem;
+  opacity: 0.7;
+}
+
 /* =============================================================
    Site nav (top header with logo)
    ============================================================= */
@@ -1543,19 +1554,10 @@ input::placeholder {
 }
 
 /* =============================================================
-   Scroll-reveal
+   Content visibility — always shown on load (no scroll-reveal)
    ============================================================= */
 
 [data-reveal] {
-  opacity: 0;
-  transform: translateY(14px);
-  transition:
-    opacity var(--duration-4) var(--ease-out-expo),
-    transform var(--duration-4) var(--ease-out-expo);
-  transition-delay: var(--reveal-delay, 0ms);
-}
-
-[data-reveal].is-visible {
   opacity: 1;
   transform: none;
 }
