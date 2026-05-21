@@ -23,7 +23,7 @@ RUN npm install --omit=dev --no-audit --no-fund \
 
 # Copy source
 COPY server.js db.js db-setup.js pg-config.js ./
-COPY data ./data
+COPY seed-data ./seed-data
 COPY migrations ./migrations
 COPY scripts ./scripts
 COPY public ./public
