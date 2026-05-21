@@ -46,15 +46,30 @@
 3. Откройте сервис приложения (Node) → **Variables** → добавьте:
    - `DATABASE_URL` — вставьте URL из шага 2 (можно через **Add Reference** к PostgreSQL-сервису).
    - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — по желанию, для уведомлений координатору.
-4. После деплоя один раз выполните миграции и seed (локально с тем же `DATABASE_URL` или через Railway CLI / одноразовую команду):
+4. Задеплойте приложение. **Миграции и слоты создаются автоматически** при старте контейнера (`migrate` → `seed:slots` → `server`). Если таблиц нет — первый запрос к `/healthz` или API тоже запустит инициализацию.
+
+Проверка после деплоя:
+
+```bash
+curl -s https://charity.up.railway.app/healthz
+# {"ok":true,"db":"ok","schema":"ready:14","telegram":"configured"}
+```
+
+Ручной запуск (локально или через Railway CLI) — если нужно пересоздать схему:
 
 ```bash
 npm install
 npm run migrate
 npm run seed:slots
+npm run db:status   # проверить таблицы и последние заявки
 ```
 
-Railway пересоберёт приложение при изменении переменных. Миграции в production обычно запускают вручную при первом подключении БД или из CI.
+Через Railway CLI:
+
+```bash
+railway link
+railway run npm run db:status
+```
 
 ### Переменные окружения
 
@@ -134,7 +149,7 @@ curl -s http://localhost:3000/api/applications/<uuid> | jq
 
 ```bash
 curl -s http://localhost:3000/healthz
-# {"ok":true,"db":"ok"}
+# {"ok":true,"db":"ok","schema":"ready:14","telegram":"configured"}
 ```
 
 ## Приём заявок
@@ -156,16 +171,33 @@ curl -s http://localhost:3000/healthz
 
 После отправки формы скопируйте `applicationId` из ответа API или из Telegram.
 
+**HTTP:**
+
 ```bash
-# через psql (подставьте свой DATABASE_URL)
-psql "$DATABASE_URL" -c "SELECT id, slot_title, email, amount, status, created_at FROM applications ORDER BY created_at DESC LIMIT 5;"
-psql "$DATABASE_URL" -c "SELECT application_id, offer_accepted, privacy_accepted, offer_version FROM consents ORDER BY created_at DESC LIMIT 5;"
+curl -s "https://charity.up.railway.app/api/applications/<applicationId>"
 ```
 
-Или HTTP:
+**Статус всей БД (локально или `railway run`):**
 
 ```bash
-curl -s "http://localhost:3000/api/applications/<applicationId>"
+npm run db:status
+```
+
+**SQL в psql** (DATABASE_URL из Railway → PostgreSQL → Connect):
+
+```sql
+-- последние заявки
+SELECT id, slot_title, email, amount, status, created_at
+FROM applications ORDER BY created_at DESC LIMIT 10;
+
+-- согласия к заявке
+SELECT application_id, offer_accepted, privacy_accepted,
+       offer_version, consent_server_timestamp, user_ip
+FROM consents
+WHERE application_id = '<uuid>';
+
+-- прогресс слота
+SELECT id, title, goal_amount, initial_funded_amount FROM support_slots;
 ```
 
 ## Деплой

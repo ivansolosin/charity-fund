@@ -12,7 +12,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "migrate": "node scripts/migrate.js",
-    "seed:slots": "node scripts/seed-slots.js"
+    "seed:slots": "node scripts/seed-slots.js",
+    "db:status": "node scripts/db-status.js"
   },
   "dependencies": {
     "express": "^4.21.2",
